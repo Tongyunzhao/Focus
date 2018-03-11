@@ -1,5 +1,6 @@
 package com.example.yunzhao.focus;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -90,7 +91,11 @@ public class MainActivity extends AppCompatActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_pomodoro) {
-            Toast.makeText(this, "启动番茄钟", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "启动番茄钟", Toast.LENGTH_SHORT).show();
+
+            Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
+            startActivity(intent);
+
             return true;
         }
 
