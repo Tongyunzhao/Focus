@@ -32,7 +32,11 @@ public class PomodoroActivity extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg) {
             if (msg.what == 1) {
-                progressBar.setProgress(progress++);
+                progressBar.setProgress(progress);
+                if (progress == 1500) {
+                    finishPomodoro();
+                }
+                progress++;
             }
             super.handleMessage(msg);
         }
@@ -111,6 +115,14 @@ public class PomodoroActivity extends AppCompatActivity {
         }
         progress = 0;
         progressBar.setProgress(progress);
+    }
+
+    private void finishPomodoro() {
+        stopTimer();
+        btn_timekeeping.setText("开始番茄钟");
+        btn_timekeeping.setBackground(getDrawable(R.drawable.btn1_selector));
+        btn_timekeeping.setTextColor(getResources().getColor(R.color.black_overlay));
+        Toast.makeText(this, "番茄钟已完成", Toast.LENGTH_SHORT).show();
     }
 
     private void showDialog() {
