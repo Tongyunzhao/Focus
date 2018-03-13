@@ -9,4 +9,5 @@
     <style name="AppTheme.NoActionBar2" parent="AppTheme.NoActionBar">
         <item name="android:windowTranslucentStatus">true</item>
     </style>
+
 </resources>
