@@ -3,6 +3,11 @@
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-
+    <string name="todotask">待办任务</string>
+    <string name="donetask">已完成任务</string>
+    <string name="account">账号</string>
+    <string name="log_out">退出登录</string>
+    <string name="todaytodo">今日待办</string>
+    <string name="inbox">收件箱</string>
 
 </resources>

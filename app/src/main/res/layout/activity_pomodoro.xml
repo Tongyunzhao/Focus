@@ -5,7 +5,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:gravity="center_horizontal"
-    android:background="@drawable/pomodoro_bg">
+    android:background="@color/bgblack">
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
@@ -14,7 +14,7 @@
         android:background="@android:color/transparent"
         android:paddingTop="@dimen/toolbar_padding_top"
         android:fitsSystemWindows="true"
-        app:navigationIcon="@drawable/close"
+        app:navigationIcon="@drawable/ic_close"
         app:title=" "/>
 
     <TextView
@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:text="写毕业论文"
         android:textColor="@android:color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/big_text_size"
         android:layout_marginTop="30dp"/>
 
     <com.example.yunzhao.focus.widget.CustomCircleProgressBar
@@ -37,14 +37,14 @@
         app:outside_radius="110dp"
         app:progress="0"
         app:progress_text_color="@android:color/white"
-        app:progress_text_size="36sp"
-        app:progress_width="2dp" />
+        app:progress_text_size="46sp"
+        app:progress_width="4dp" />
 
     <Button
         android:id="@+id/btn_timekeeping"
         android:layout_width="120dp"
         android:layout_height="40dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="65dp"
         android:text="开始番茄钟"
         android:textColor="@color/black_overlay"
         android:textSize="@dimen/small_text_size"

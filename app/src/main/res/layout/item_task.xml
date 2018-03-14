@@ -1,29 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="48dp"
+    android:layout_height="wrap_content"
     android:background="@android:color/white"
     android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin">
+    android:orientation="horizontal">
 
     <CheckBox
         android:id="@+id/checkbox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:buttonTint="@color/grey"
-        android:scaleX="0.9"
-        android:scaleY="0.9"/>
+        android:buttonTint="@android:color/black"
+        android:scaleX="0.8"
+        android:scaleY="0.8"
+        android:layout_marginLeft="10dp"/>
 
     <TextView
         android:id="@+id/taskname"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
+        android:layout_marginLeft="5dp"
         android:text="写毕业论文"
+        android:maxLines="1"
         android:textColor="@android:color/black"
-        android:textSize="@dimen/nomal_text_size" />
+        android:textSize="@dimen/nomal_text_size"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"/>
 
     <View
         android:layout_width="0dp"
@@ -32,9 +34,10 @@
 
     <CheckBox
         android:id="@+id/istodaytask"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
         android:background="@drawable/checkbox_istoday"
-        android:button="@null" />
+        android:button="@null"
+        android:layout_marginRight="@dimen/activity_horizontal_margin"/>
 
 </LinearLayout>

@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#1E88E5</color>
-    <color name="colorPrimaryDark">#1565C0</color>
+    <color name="colorPrimary">#000000</color>
+    <color name="colorPrimaryDark">#FFFFFF</color>
+    <color name="statusBarColor">#33FFFFFF</color>
+    <color name="mTextGrey">#424242</color>
     <color name="colorAccent">#FFC107</color>
     <color name="black_overlay">#A6000000</color>
-    <color name="progress_color">#849CB3</color>
     <color name="grey">#BDBDBD</color>
     <color name="bggrey">#FAFAFA</color>
+    <color name="mBlue">#2196F3</color>
+    <color name="mRed">#C62828</color>
+    <color name="iconGrey">#9E9E9E</color>
+    <color name="bgblack">#1A1917</color>
+    <color name="progress_color">#3C4543</color>
 </resources>

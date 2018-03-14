@@ -1,4 +1,4 @@
-package com.example.yunzhao.focus.widget;
+package com.example.yunzhao.focus;
 
 /**
  * Created by Yunzhao on 2018/3/13.

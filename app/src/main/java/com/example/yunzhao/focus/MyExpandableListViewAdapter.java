@@ -6,15 +6,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.CheckBox;
-import android.widget.Checkable;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.example.yunzhao.focus.widget.SubtaskItem;
-
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by Yunzhao on 2018/3/13.
