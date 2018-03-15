@@ -13,4 +13,5 @@
     <color name="iconGrey">#9E9E9E</color>
     <color name="bgblack">#1A1917</color>
     <color name="progress_color">#3C4543</color>
+    <color name="dividergrey">#EEEEEE</color>
 </resources>

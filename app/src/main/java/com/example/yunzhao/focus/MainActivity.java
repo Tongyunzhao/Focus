@@ -6,15 +6,6 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.BottomSheetDialog;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.ViewPager;
-import android.util.Log;
-import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -28,12 +19,11 @@ import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Toast;
-
 import com.baoyz.swipemenulistview.SwipeMenu;
 import com.baoyz.swipemenulistview.SwipeMenuCreator;
 import com.baoyz.swipemenulistview.SwipeMenuItem;
@@ -42,13 +32,12 @@ import com.example.yunzhao.focus.util.DimenUtil;
 import com.example.yunzhao.focus.util.StatusBarUtil;
 import com.example.yunzhao.focus.widget.MyEditDialog;
 import com.example.yunzhao.focus.widget.MyListView;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import static com.example.yunzhao.focus.util.DimenUtil.dp2px;
 
-import static com.example.yunzhao.focus.util.ListViewUtil.setListViewHeightBasedOnChildren;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, View.OnTouchListener {
@@ -153,6 +142,8 @@ public class MainActivity extends AppCompatActivity
         initTodayData();
         MyListViewAdapter adapter = new MyListViewAdapter(this, todayTaskItems);
         todo_listview.setAdapter(adapter);
+
+        // 设置左滑按钮点击事件
         todo_listview.setOnMenuItemClickListener(new SwipeMenuListView.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(int position, SwipeMenu menu, int index) {
@@ -171,7 +162,16 @@ public class MainActivity extends AppCompatActivity
                 return false;
             }
         });
-        //setListViewHeightBasedOnChildren(todo_listview);
+
+        // 设置Listview列表项点击事件
+        todo_listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                //Toast.makeText(MainActivity.this, todayTaskItems.get(position).getTaskName(), Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, TaskdetailActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     private void setInboxTaskListView() {
@@ -198,7 +198,15 @@ public class MainActivity extends AppCompatActivity
                 return false;
             }
         });
-        //setListViewHeightBasedOnChildren(inbox_listview);
+        // 设置Listview列表项点击事件
+        inbox_listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                //Toast.makeText(MainActivity.this, todayTaskItems.get(position).getTaskName(), Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, TaskdetailActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     SwipeMenuCreator creator = new SwipeMenuCreator() {
@@ -207,7 +215,7 @@ public class MainActivity extends AppCompatActivity
             // create "clock" item
             SwipeMenuItem clockItem = new SwipeMenuItem(getApplicationContext());
             clockItem.setBackground(new ColorDrawable(Color.WHITE));
-            clockItem.setWidth(dp2px(60));
+            clockItem.setWidth(dp2px(MainActivity.this, 60));
             clockItem.setIcon(R.drawable.ic_clock);
             clockItem.setBackground(R.color.bggrey);
             menu.addMenuItem(clockItem);
@@ -215,7 +223,7 @@ public class MainActivity extends AppCompatActivity
             // create "delete" item
             SwipeMenuItem deleteItem = new SwipeMenuItem(getApplicationContext());
             deleteItem.setBackground(new ColorDrawable(Color.WHITE));
-            deleteItem.setWidth(dp2px(60));
+            deleteItem.setWidth(dp2px(MainActivity.this, 60));
             deleteItem.setIcon(R.drawable.ic_delete);
             deleteItem.setBackground(R.color.bggrey);
             menu.addMenuItem(deleteItem);
@@ -371,11 +379,6 @@ public class MainActivity extends AppCompatActivity
             inputManager.showSoftInput(editText, 0);
 
         }
-    }
-
-    private int dp2px(int dp) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
-                getResources().getDisplayMetrics());
     }
 
     @Override

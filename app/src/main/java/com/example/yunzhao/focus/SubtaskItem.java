@@ -6,36 +6,26 @@ package com.example.yunzhao.focus;
 
 public class SubtaskItem {
     private boolean isDone;
-    private String taskName;
-    private boolean isTodayTask;
+    private String subtaskName;
 
-    public SubtaskItem(boolean isDone, String taskName, boolean isTodayTask) {
+    public SubtaskItem(boolean isDone, String subtaskName) {
         this.isDone = isDone;
-        this.taskName = taskName;
-        this.isTodayTask = isTodayTask;
+        this.subtaskName = subtaskName;
     }
 
     public boolean isDone() {
         return isDone;
     }
 
-    public String getTaskName() {
-        return taskName;
-    }
-
-    public boolean isTodayTask() {
-        return isTodayTask;
+    public String getSubtaskName() {
+        return subtaskName;
     }
 
     public void setDone(boolean done) {
         isDone = done;
     }
 
-    public void setTaskName(String taskName) {
-        this.taskName = taskName;
-    }
-
-    public void setTodayTask(boolean todayTask) {
-        isTodayTask = todayTask;
+    public void setSubtaskName(String subtaskName) {
+        this.subtaskName = subtaskName;
     }
 }

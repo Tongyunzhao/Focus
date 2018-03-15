@@ -12,5 +12,11 @@
     <string name="addtask">添加任务</string>
     <string name="ok">确定</string>
     <string name="cancel">取消</string>
-
+    <string name="taskdetail">任务详情</string>
+    <string name="more">更多</string>
+    <string name="pomodoro">番茄钟</string>
+    <string name="startpomodoro">开始番茄钟</string>
+    <string name="delete">删除</string>
+    <string name="addsubtask">添加子任务</string>
+    <string name="addtaskdescription">添加任务描述...</string>
 </resources>
