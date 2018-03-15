@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.yunzhao.focus.widget.CustomCircleProgressBar;
@@ -28,6 +29,7 @@ public class PomodoroActivity extends AppCompatActivity {
     private CustomCircleProgressBar progressBar;
     private int progress = 0;
     private Button btn_timekeeping;
+    private TextView taskname;
     Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -52,6 +54,9 @@ public class PomodoroActivity extends AppCompatActivity {
         setContentView(R.layout.activity_pomodoro);
 
         setToolbar();
+
+        taskname = findViewById(R.id.taskname);
+        taskname.setText(getIntent().getStringExtra("taskname"));
 
         progressBar = findViewById(R.id.progress);
         btn_timekeeping = findViewById(R.id.btn_timekeeping);

@@ -12,8 +12,10 @@ import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -29,6 +31,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.Toast;
 
 import com.baoyz.swipemenulistview.SwipeMenu;
@@ -37,6 +40,8 @@ import com.baoyz.swipemenulistview.SwipeMenuItem;
 import com.baoyz.swipemenulistview.SwipeMenuListView;
 import com.example.yunzhao.focus.util.DimenUtil;
 import com.example.yunzhao.focus.util.StatusBarUtil;
+import com.example.yunzhao.focus.widget.MyEditDialog;
+import com.example.yunzhao.focus.widget.MyListView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,12 +51,16 @@ import java.util.TimerTask;
 import static com.example.yunzhao.focus.util.ListViewUtil.setListViewHeightBasedOnChildren;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, View.OnTouchListener {
 
-    private SwipeMenuListView todo_listview;
-    private SwipeMenuListView inbox_listview;
+    private MyListView todo_listview;
+    private MyListView inbox_listview;
     private ArrayList<TaskItem> todayTaskItems;
     private ArrayList<TaskItem> inboxTaskItems;
+    private ScrollView scrollView;
+    private float startX = 0, curX = 0, startY = 0, curY = 0;
+    private Button btn_addtodaytask;
+    private Button btn_addinboxtask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +89,11 @@ public class MainActivity extends AppCompatActivity
         setTodayTaskListView();
         // 设置收件箱的Listview
         setInboxTaskListView();
+        // 解决Listview和Scrollview的滚动冲突
+        fixRollConflict();
+
+        // 添加待办项
+        addTask();
     }
 
 
@@ -146,6 +160,7 @@ public class MainActivity extends AppCompatActivity
                     case 0:
                         // 进入番茄钟
                         Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
+                        intent.putExtra("taskname", todayTaskItems.get(position).getTaskName());
                         startActivity(intent);
                         break;
                     case 1:
@@ -172,6 +187,7 @@ public class MainActivity extends AppCompatActivity
                     case 0:
                         // 进入番茄钟
                         Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
+                        intent.putExtra("taskname", inboxTaskItems.get(position).getTaskName());
                         startActivity(intent);
                         break;
                     case 1:
@@ -229,51 +245,148 @@ public class MainActivity extends AppCompatActivity
         inboxTaskItems.add(new TaskItem(false, "买洗衣液", false));
     }
 
+    private void fixRollConflict() {
+        scrollView = findViewById(R.id.scrollView);
+        inbox_listview.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                scrollView.requestDisallowInterceptTouchEvent(true);
+                int action = motionEvent.getAction();
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN:
+                        startX = motionEvent.getX();
+                        startY = motionEvent.getY();
+                        //Toast.makeText(MainActivity.this, "0:startY="+startY, Toast.LENGTH_SHORT).show();
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        curX = motionEvent.getX();
+                        curY = motionEvent.getY();
+                        if (Math.abs(curY-startY) > 100 && startX-curX < 60) {
+                            //Toast.makeText(MainActivity.this, "1:curY="+curY, Toast.LENGTH_SHORT).show();
+                            scrollView.requestDisallowInterceptTouchEvent(false);
+                        } else {
+                            //Toast.makeText(MainActivity.this, "2:curY="+curY, Toast.LENGTH_SHORT).show();
+                            scrollView.requestDisallowInterceptTouchEvent(true);
+                        }
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        //Toast.makeText(MainActivity.this, "4", Toast.LENGTH_SHORT).show();
+                        scrollView.requestDisallowInterceptTouchEvent(true);
+                        break;
+                }
 
-//    private void showAddTaskDialog() {
-//        final BottomSheetDialog mBottomSheetDialog = new BottomSheetDialog(this);
-//        View dialogView = getLayoutInflater().inflate(R.layout.dialog_addtask, null);
-//
-//        Button btn_ok = dialogView.findViewById(R.id.btn_ok);
-//        final EditText et_addtask = dialogView.findViewById(R.id.et_addtask);
-//        mBottomSheetDialog.setContentView(dialogView);
-//
-//        btn_ok.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                mBottomSheetDialog.dismiss();
-//            }
-//        });
-//
-//        mBottomSheetDialog.show();
-//
-//        // Dialog显示0.2秒后弹出软键盘
-//        Timer timer = new Timer();
-//        timer.schedule(new TimerTask() {
-//            @Override
-//            public void run() {
-//                showKeyboard(et_addtask);
-//            }  }, 200);
-//
-//    }
-//
-//    public void showKeyboard(EditText editText) {
-//        if(editText!=null){
-//            //设置可获得焦点
-//            editText.setFocusable(true);
-//            editText.setFocusableInTouchMode(true);
-//            //请求获得焦点
-//            editText.requestFocus();
-//            //调用系统输入法
-//            InputMethodManager inputManager = (InputMethodManager) editText
-//                    .getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-//            inputManager.showSoftInput(editText, 0);
-//
-//        }
-//    }
+                return false;
+            }
+        });
+        todo_listview.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                scrollView.requestDisallowInterceptTouchEvent(true);
+                int action = motionEvent.getAction();
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN:
+                        startX = motionEvent.getX();
+                        startY = motionEvent.getY();
+                        //Toast.makeText(MainActivity.this, "0:startY="+startY, Toast.LENGTH_SHORT).show();
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        curX = motionEvent.getX();
+                        curY = motionEvent.getY();
+                        if (Math.abs(curY-startY) > 100 && startX-curX < 60) {
+                            //Toast.makeText(MainActivity.this, "1:curY="+curY, Toast.LENGTH_SHORT).show();
+                            scrollView.requestDisallowInterceptTouchEvent(false);
+                        } else {
+                            //Toast.makeText(MainActivity.this, "2:curY="+curY, Toast.LENGTH_SHORT).show();
+                            scrollView.requestDisallowInterceptTouchEvent(true);
+                        }
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        //Toast.makeText(MainActivity.this, "4", Toast.LENGTH_SHORT).show();
+                        scrollView.requestDisallowInterceptTouchEvent(true);
+                        break;
+                }
+
+                return false;
+            }
+        });
+    }
+
+    private void addTask() {
+        btn_addtodaytask = findViewById(R.id.btn_addtodaytask);
+        btn_addinboxtask = findViewById(R.id.btn_addinboxtask);
+        btn_addtodaytask.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showAddTaskDialog(0);
+            }
+        });
+        btn_addinboxtask.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showAddTaskDialog(1);
+            }
+        });
+    }
+
+    // tag：0代表今日待办，1代表收件箱
+    private void showAddTaskDialog(int tag) {
+        final MyEditDialog dialog = new MyEditDialog(this);
+        dialog.setNoOnclickListener("取消", new MyEditDialog.onNoOnclickListener() {
+            @Override
+            public void onNoClick() {
+                //Toast.makeText(MainActivity.this,"取消",Toast.LENGTH_LONG).show();
+                dialog.dismiss();
+            }
+        });
+        dialog.setYesOnclickListener("确定", new MyEditDialog.onYesOnclickListener() {
+            @Override
+            public void onYesClick() {
+                //Toast.makeText(MainActivity.this,"确定",Toast.LENGTH_LONG).show();
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
+
+        // Dialog显示0.2秒后弹出软键盘
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                showKeyboard(dialog.getEditText());
+            }  }, 200);
+
+    }
+
+    public void showKeyboard(EditText editText) {
+        if(editText!=null){
+            //设置可获得焦点
+            editText.setFocusable(true);
+            editText.setFocusableInTouchMode(true);
+            //请求获得焦点
+            editText.requestFocus();
+            //调用系统输入法
+            InputMethodManager inputManager = (InputMethodManager) editText
+                    .getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            inputManager.showSoftInput(editText, 0);
+
+        }
+    }
 
     private int dp2px(int dp) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
                 getResources().getDisplayMetrics());
     }
+
+    @Override
+    public boolean onTouch(View view, MotionEvent motionEvent) {
+        switch (motionEvent.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                startX = motionEvent.getX();
+                startY = motionEvent.getY();
+                break;
+        }
+        return false;
+    }
+
 }
