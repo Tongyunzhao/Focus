@@ -133,4 +133,8 @@ public class MyEditDialog extends Dialog {
     public EditText getEditText() {
         return et_addtask;
     }
+
+    public String getEditString() {
+        return et_addtask.getText().toString().trim();
+    }
 }
