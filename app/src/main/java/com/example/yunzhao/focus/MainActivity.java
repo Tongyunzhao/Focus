@@ -153,7 +153,8 @@ public class MainActivity extends AppCompatActivity
             toolbar_title.setText(R.string.done);
 
         } else if (id == R.id.nav_logout) {
-
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivity(intent);
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
