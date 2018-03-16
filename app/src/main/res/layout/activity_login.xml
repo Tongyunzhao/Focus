@@ -40,7 +40,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/prompt_phone"
-                    android:inputType="textPhonetic"
+                    android:inputType="phone"
                     android:maxLines="1"
                     android:singleLine="true" />
 
@@ -76,12 +76,12 @@
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp">
+                android:layout_height="wrap_content">
                 <TextView
-                    android:id="@+id/btn_logup"
+                    android:id="@+id/btn_register"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="40dp"
+                    android:gravity="center_vertical"
                     android:layout_alignParentEnd="true"
                     android:text="@string/noAccount"
                     android:textColor="@color/mTextGrey"/>

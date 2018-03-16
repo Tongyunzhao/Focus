@@ -33,7 +33,9 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".LoginActivity"
-            android:label="@string/title_activity_login"></activity>
+            android:label="@string/title_activity_login"/>
+        <activity android:name=".RegisterActivity1"/>
+        <activity android:name=".RegisterActivity2"/>
     </application>
 
 </manifest>
