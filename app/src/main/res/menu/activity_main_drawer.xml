@@ -7,7 +7,8 @@
         <item
             android:id="@+id/nav_todo"
             android:icon="@drawable/todo"
-            android:title="@string/todotask" />
+            android:title="@string/todotask"
+            android:checked="true"/>
         <item
             android:id="@+id/nav_done"
             android:icon="@drawable/done"

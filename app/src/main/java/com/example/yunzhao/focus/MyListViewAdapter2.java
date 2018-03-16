@@ -1,6 +1,7 @@
 package com.example.yunzhao.focus;
 
 import android.content.Context;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -55,6 +56,10 @@ public class MyListViewAdapter2 extends BaseAdapter {
 
         vh.checkbox.setChecked(subtaskItems.get(position).isDone());
         vh.subtaskname.setText(subtaskItems.get(position).getSubtaskName());
+        if (subtaskItems.get(position).isDone()) {
+            // 设置删除线
+            vh.subtaskname.getPaint().setFlags(Paint.STRIKE_THRU_TEXT_FLAG);
+        }
 
         return convertView;
     }

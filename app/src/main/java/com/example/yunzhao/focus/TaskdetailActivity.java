@@ -63,7 +63,7 @@ public class TaskdetailActivity extends AppCompatActivity {
         subtaskItems = new ArrayList<>();
 
         // 添加子任务信息
-        subtaskItems.add(new SubtaskItem(false, "确定毕业论文目录结构"));
+        subtaskItems.add(new SubtaskItem(true, "确定毕业论文目录结构"));
         subtaskItems.add(new SubtaskItem(false, "设计APP的功能和页面"));
     }
 

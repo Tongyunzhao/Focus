@@ -22,7 +22,10 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.baoyz.swipemenulistview.SwipeMenu;
 import com.baoyz.swipemenulistview.SwipeMenuCreator;
@@ -32,6 +35,8 @@ import com.example.yunzhao.focus.util.DimenUtil;
 import com.example.yunzhao.focus.util.StatusBarUtil;
 import com.example.yunzhao.focus.widget.MyEditDialog;
 import com.example.yunzhao.focus.widget.MyListView;
+import com.example.yunzhao.focus.widget.MyListView2;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -46,10 +51,14 @@ public class MainActivity extends AppCompatActivity
     private MyListView inbox_listview;
     private ArrayList<TaskItem> todayTaskItems;
     private ArrayList<TaskItem> inboxTaskItems;
+    private ArrayList<TaskItem> doneTaskItems;
     private ScrollView scrollView;
     private float startX = 0, curX = 0, startY = 0, curY = 0;
     private Button btn_addtodaytask;
     private Button btn_addinboxtask;
+    private TextView toolbar_title;
+    private ListView donetask_listview;
+    private LinearLayout donetask_layout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +69,8 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("");
         setSupportActionBar(toolbar);
+        toolbar_title = findViewById(R.id.toolbar_title);
+        toolbar_title.setText(R.string.app_name);
 
         // 设置状态栏颜色
         StatusBarUtil.setStatusBarColor(getWindow(), this);
@@ -83,6 +94,14 @@ public class MainActivity extends AppCompatActivity
 
         // 添加待办项
         addTask();
+
+        // 已完成的任务
+        donetask_listview = findViewById(R.id.donetask_listview);
+        initDoneTaskData();
+        MyListViewAdapter adapter = new MyListViewAdapter(MainActivity.this, doneTaskItems);
+        donetask_listview.setAdapter(adapter);
+
+        donetask_layout = findViewById(R.id.donetask_layout);
     }
 
 
@@ -124,8 +143,14 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_todo) {
-            // Handle the camera action
+            donetask_layout.setVisibility(View.GONE);
+            scrollView.setVisibility(View.VISIBLE);
+            toolbar_title.setText(R.string.app_name);
+
         } else if (id == R.id.nav_done) {
+            scrollView.setVisibility(View.GONE);
+            donetask_layout.setVisibility(View.VISIBLE);
+            toolbar_title.setText(R.string.done);
 
         } else if (id == R.id.nav_logout) {
 
@@ -237,7 +262,7 @@ public class MainActivity extends AppCompatActivity
         // 添加任务信息
         todayTaskItems.add(new TaskItem(false, "确定毕业论文目录结构", true));
         todayTaskItems.add(new TaskItem(false, "设计APP的功能和页面", true));
-        todayTaskItems.add(new TaskItem(true, "买洗衣液", true));
+        todayTaskItems.add(new TaskItem(false, "买洗衣液", true));
     }
 
     // 设置收件箱列表中的数据
@@ -251,6 +276,25 @@ public class MainActivity extends AppCompatActivity
         inboxTaskItems.add(new TaskItem(false, "确定毕业论文目录结构", false));
         inboxTaskItems.add(new TaskItem(false, "设计APP的功能和页面", false));
         inboxTaskItems.add(new TaskItem(false, "买洗衣液", false));
+    }
+
+    // 设置已完成列表中的数据
+    private void initDoneTaskData() {
+        doneTaskItems = new ArrayList<>();
+
+        // 添加任务信息
+        doneTaskItems.add(new TaskItem(true, "确定毕业论文目录结构", false));
+        doneTaskItems.add(new TaskItem(true, "设计APP的功能和页面", false));
+        doneTaskItems.add(new TaskItem(true, "买洗衣液", false));
+        doneTaskItems.add(new TaskItem(true, "确定毕业论文目录结构", false));
+        doneTaskItems.add(new TaskItem(true, "设计APP的功能和页面", false));
+        doneTaskItems.add(new TaskItem(true, "买洗衣液", false));
+        doneTaskItems.add(new TaskItem(true, "确定毕业论文目录结构", false));
+        doneTaskItems.add(new TaskItem(true, "设计APP的功能和页面", false));
+        doneTaskItems.add(new TaskItem(true, "买洗衣液", false));
+        doneTaskItems.add(new TaskItem(true, "确定毕业论文目录结构", false));
+        doneTaskItems.add(new TaskItem(true, "设计APP的功能和页面", false));
+        doneTaskItems.add(new TaskItem(true, "买洗衣液", false));
     }
 
     private void fixRollConflict() {

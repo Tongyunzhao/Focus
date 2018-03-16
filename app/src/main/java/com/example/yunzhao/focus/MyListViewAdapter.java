@@ -1,6 +1,7 @@
 package com.example.yunzhao.focus;
 
 import android.content.Context;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -58,6 +59,12 @@ public class MyListViewAdapter extends BaseAdapter {
         vh.checkbox.setChecked(taskItems.get(position).isDone());
         vh.taskname.setText(taskItems.get(position).getTaskName());
         vh.istodaytask.setChecked(taskItems.get(position).isTodayTask());
+
+        if (taskItems.get(position).isDone()) {
+            // 设置删除线
+            vh.taskname.getPaint().setFlags(Paint.STRIKE_THRU_TEXT_FLAG);
+            vh.istodaytask.setVisibility(View.GONE);
+        }
 
         return convertView;
     }
