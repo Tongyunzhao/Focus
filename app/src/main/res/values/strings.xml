@@ -25,7 +25,12 @@
     <string name="addsubtask">添加子任务</string>
     <string name="addtaskdescription">添加任务描述...</string>
     <string name="done">已完成</string>
+    <string name="yuyinhint">请开始说话...</string>
+    <string name="yuyinexample">例如：去图书馆借书</string>
     <string name="title_activity_login">Sign in</string>
+
+
+
 
     <!-- Strings related to login -->
     <string name="prompt_phone">手机号</string>
