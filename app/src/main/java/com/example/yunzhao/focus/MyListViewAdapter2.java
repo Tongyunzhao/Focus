@@ -40,7 +40,7 @@ public class MyListViewAdapter2 extends BaseAdapter {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent) {
         //获取每个item的样式并赋值
         MyListViewAdapter2.Viewholder vh;
 
@@ -56,12 +56,35 @@ public class MyListViewAdapter2 extends BaseAdapter {
 
         vh.checkbox.setChecked(subtaskItems.get(position).isDone());
         vh.subtaskname.setText(subtaskItems.get(position).getSubtaskName());
+
         if (subtaskItems.get(position).isDone()) {
             // 设置删除线
             vh.subtaskname.getPaint().setFlags(Paint.STRIKE_THRU_TEXT_FLAG);
+        } else {
+            vh.subtaskname.getPaint().setFlags(0);
         }
 
+        vh.checkbox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mOnItemDoneListener.onDoneClick(position);
+            }
+        });
+
         return convertView;
+    }
+
+    /**
+     * 点击checkbox的监听接口
+     */
+    public interface onItemDoneListener {
+        void onDoneClick(int i);
+    }
+
+    private MyListViewAdapter2.onItemDoneListener mOnItemDoneListener;
+
+    public void setOnItemDoneClickListener(MyListViewAdapter2.onItemDoneListener mOnItemDoneListener) {
+        this.mOnItemDoneListener = mOnItemDoneListener;
     }
 
     /*我们新增了一个内部类ViewHolder，用于对控件的实例进行缓存。当convertView为空的时候，创建一个ViewHolder对象，并将控件的实例都存放在ViewHolder里，然后调用View的setTag()方法，将ViewHolder对象存储在View中。当convertView不为空的时候则调用View的getTag()方法，把ViewHolder重新取出。这样所有控件的实例都缓存在了ViewHolder里，就没有必要每次都通过findViewById()方法来获取控件实例了。*/
