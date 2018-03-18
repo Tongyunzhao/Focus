@@ -93,6 +93,7 @@ public class MainActivity extends AppCompatActivity
             switch (msg.arg1) {
                 case 0:
                     TaskItem doneTaskItem = todayTaskItems.get(operation_position);
+                    todayTaskItems.get(operation_position).setTodayTask(false);
                     todayTaskItems.remove(operation_position);
                     doneTaskItems.add(0, doneTaskItem);
                     refreshListView();

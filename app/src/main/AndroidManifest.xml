@@ -27,7 +27,8 @@
         </activity>
         <activity
             android:name=".PomodoroActivity"
-            android:theme="@style/AppTheme.NoActionBar2" />
+            android:theme="@style/AppTheme.NoActionBar2"
+            android:launchMode="singleTop"/>
         <activity
             android:name=".TaskdetailActivity"
             android:windowSoftInputMode="adjustResize" />
