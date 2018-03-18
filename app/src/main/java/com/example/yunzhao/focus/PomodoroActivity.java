@@ -179,7 +179,6 @@ public class PomodoroActivity extends AppCompatActivity {
     private void finishPomodoro() {
         stopTimer();
         resetPomodoro();
-        Toast.makeText(this, "番茄钟已完成", Toast.LENGTH_SHORT).show();
     }
 
     private void showDialog() {

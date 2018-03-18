@@ -6,6 +6,10 @@
     <string name="todotask">待办任务</string>
     <string name="donetask">已完成任务</string>
     <string name="account">账号</string>
+    <string name="tag">标签</string>
+    <string name="tag_work">#工作</string>
+    <string name="tag_learn">#学习</string>
+    <string name="tag_live">#生活</string>
     <string name="log_out">退出登录</string>
     <string name="todaytodo">今日待办</string>
     <string name="inbox">收件箱</string>
