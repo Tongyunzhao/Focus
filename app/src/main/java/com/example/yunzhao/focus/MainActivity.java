@@ -1,9 +1,12 @@
 package com.example.yunzhao.focus;
 
 import android.Manifest;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.ColorDrawable;
@@ -52,6 +55,7 @@ import com.baoyz.swipemenulistview.SwipeMenuCreator;
 import com.baoyz.swipemenulistview.SwipeMenuItem;
 import com.baoyz.swipemenulistview.SwipeMenuListView;
 import com.example.yunzhao.focus.MyListViewAdapter.onItemDoneListener;
+import com.example.yunzhao.focus.helper.DatabaseHelper;
 import com.example.yunzhao.focus.util.DimenUtil;
 import com.example.yunzhao.focus.util.JsonParser;
 import com.example.yunzhao.focus.util.StatusBarUtil;
@@ -74,6 +78,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -86,36 +91,33 @@ import static com.example.yunzhao.focus.util.DimenUtil.dp2px;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, View.OnTouchListener, SensorEventListener {
 
+    // UI
     private MyListView todo_listview;
     private MyListView inbox_listview;
+    private ListView donetask_listview;
+    private LinearLayout donetask_layout;  // 已完成页面
+    private ScrollView scrollView;
+    private Toolbar toolbar;
+    private TextView toolbar_title;
 
     // 今日待办、收件箱、已完成 3个清单的数据
     private ArrayList<TaskItem> todayTaskItems;
     private ArrayList<TaskItem> inboxTaskItems;
     private ArrayList<TaskItem> doneTaskItems;
 
-    private ScrollView scrollView;
-    private float startX = 0, curX = 0, startY = 0, curY = 0;  // 记录手指触摸的位置
-
-    // 标题栏
-    private Toolbar toolbar;
-    private TextView toolbar_title;
-
-    // 已完成页面
-    private ListView donetask_listview;
-    private LinearLayout donetask_layout;
-
-    // 音效
-    private SoundPool soundPool;  // 声明一个SoundPool
-    private int soundID;  // 完成任务的音效
-    private int soundID_;  // 开始语音识别的音效
-
     // 今日待办、收件箱、已完成 3个清单的适配器
     private MyListViewAdapter adapter0;  // 今日待办的适配器
     private MyListViewAdapter adapter1;  // 收件箱的适配器
     private MyListViewAdapter adapter2;  // 已完成的适配器
 
+    // 标记
+    private float startX = 0, curX = 0, startY = 0, curY = 0;  // 记录手指触摸的位置
     private int operation_position;  // 记录当前要进行操作的item位置
+
+    // 音效
+    private SoundPool soundPool;  // 声明一个SoundPool
+    private int soundID;  // 完成任务的音效
+    private int soundID_;  // 开始语音识别的音效
 
     // 摇一摇操作
     private static final int SENSOR_SHAKE = 40;
@@ -127,14 +129,17 @@ public class MainActivity extends AppCompatActivity
     private SpeechRecognizer mIat = null;  // 语音听写对象
     private RecognizerDialog mIatDialog = null;  // 语音听写UI
     private String mEngineType = SpeechConstant.TYPE_CLOUD;  // 引擎类型
-    // 用HashMap存储听写结果
-    private HashMap<String, String> mIatResults = new LinkedHashMap<String, String>();
+    private HashMap<String, String> mIatResults = new LinkedHashMap<String, String>();  // 用HashMap存储听写结果
     int ret = 0; // 函数调用返回值
     private BottomSheetDialog yuyinDialog;
 
-
     // 权限
     private static final int MY_PERMISSION_REQUEST_CODE = 10000;
+
+    // 数据存储
+    private DatabaseHelper db;
+    private SharedPreferences sp;
+    private static final String FILE_NAME = "FirstStart";
 
     private Handler handler = new Handler() {
         @Override
@@ -143,18 +148,25 @@ public class MainActivity extends AppCompatActivity
                 case 0:
                     TaskItem doneTaskItem = todayTaskItems.get(operation_position);
                     todayTaskItems.get(operation_position).setTodayTask(false);
+                    todayTaskItems.get(operation_position).setLastMoveTime(new Date().getTime());
+                    db.updateTask(todayTaskItems.get(operation_position));  // 在数据库中更新task数据
                     todayTaskItems.remove(operation_position);
                     doneTaskItems.add(0, doneTaskItem);
                     refreshListView();
                     break;
                 case 1:
                     TaskItem doneTaskItem1 = inboxTaskItems.get(operation_position);
+                    inboxTaskItems.get(operation_position).setTodayTask(false);
+                    inboxTaskItems.get(operation_position).setLastMoveTime(new Date().getTime());
+                    db.updateTask(inboxTaskItems.get(operation_position));  // 在数据库中更新task数据
                     inboxTaskItems.remove(operation_position);
                     doneTaskItems.add(0, doneTaskItem1);
                     refreshListView();
                     break;
                 case 2:
                     TaskItem doneTaskItem2 = doneTaskItems.get(operation_position);
+                    doneTaskItems.get(operation_position).setLastMoveTime(new Date().getTime());
+                    db.updateTask(doneTaskItems.get(operation_position));  // 在数据库中更新task数据
                     doneTaskItems.remove(operation_position);
                     inboxTaskItems.add(0, doneTaskItem2);
                     refreshListView();
@@ -169,25 +181,71 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        /**
+         * 配置页面整体UI
+         */
         setToolbar();  // 设置toolbar
         StatusBarUtil.setStatusBarColor(getWindow(), this);  // 设置状态栏颜色
         setDrawerLayout();  // 设置左侧抽屉
 
-        setTodayTaskListView();  // 设置今日待办的Listview
-        setInboxTaskListView();  // 设置收件箱的Listview
+        /**
+         * 初始化数据
+         */
+        db = new DatabaseHelper(this);
+        sp = getSharedPreferences(FILE_NAME, 0);
+        Boolean user_first = sp.getBoolean("FIRST", true);
+        if (user_first){//第一次
+            sp.edit().putBoolean("FIRST", false).commit();
+            writeSampleTaskToDB();
+        }
+        initData();
+
+        /**
+         * 配置ListView
+         */
+        setTodayTaskListView();  // 设置“今日待办”的Listview
+        setInboxTaskListView();  // 设置“收件箱”的Listview
+        initDoneTaskListView();  // 设置“已完成”的Listview
         fixRollConflict();  // 解决Listview和Scrollview的滚动冲突
+
+        /**
+         * 处理交互事件
+         */
         setAddTask();  // 设置添加待办项事件
-
-        initDoneTask();  // 设置“已完成”任务页面
-
         // 初始化音效
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             initSound();
         }
-
         // 初始化科大讯飞语音识别
         SpeechUtility.createUtility(this, SpeechConstant.APPID + "=5aac8016");
         initYuYin();
+
+    }
+
+    private void writeSampleTaskToDB() {
+        // “今日待办”示例task
+        db.createTask(new TaskItem("点击左侧的小黑框Done掉任务", true, new Date().getTime()));
+        db.createTask(new TaskItem("任务可以添加描述和子任务", true, new Date().getTime()));
+        db.createTask(new TaskItem("左滑还有操作哦(＾－＾)", true, new Date().getTime()));
+        
+        // “收件箱”示例task
+        db.createTask(new TaskItem("每天从「收件箱」里选任务到「今日待办」", false, new Date().getTime()));
+        db.createTask(new TaskItem("番茄工作法，了解一下", false, new Date().getTime()));
+        db.createTask(new TaskItem("文字太慢？摇一摇语音输入任务", false, new Date().getTime()));
+        db.createTask(new TaskItem("从侧边栏可以进入「已完成」的任务哦", false, new Date().getTime()));
+
+        // “已完成”示例task
+        db.createTask(new TaskItem(true, "这是一条已经完成的任务", false, new Date().getTime()));
+        db.createTask(new TaskItem(true, "重做任务？点左侧小黑框移回「收件箱」", false, new Date().getTime()));
+    }
+
+    private void initData() {
+        todayTaskItems = new ArrayList<>();
+        todayTaskItems = (ArrayList<TaskItem>) db.getTodayTasks();
+        inboxTaskItems = new ArrayList<>();
+        inboxTaskItems = (ArrayList<TaskItem>) db.getInboxTasks();
+        doneTaskItems = new ArrayList<>();
+        doneTaskItems = (ArrayList<TaskItem>) db.getDoneTasks();
     }
 
     private void initYuYin() {
@@ -224,15 +282,6 @@ public class MainActivity extends AppCompatActivity
         soundPool = new SoundPool.Builder().build();
         soundID = soundPool.load(this, R.raw.done, 1);
         soundID_ = soundPool.load(this, R.raw.ding, 1);
-    }
-
-    private void initDoneTask() {
-        donetask_listview = findViewById(R.id.donetask_listview);
-        initDoneTaskData();
-        adapter2 = new MyListViewAdapter(MainActivity.this, doneTaskItems, 2);
-        donetask_listview.setAdapter(adapter2);
-        adapter2.setOnItemDoneClickListener(myOnItemDoneListener2);
-        donetask_layout = findViewById(R.id.donetask_layout);
     }
 
     @Override
@@ -278,7 +327,6 @@ public class MainActivity extends AppCompatActivity
     private void setTodayTaskListView() {
         todo_listview = findViewById(R.id.todo_listview);
         todo_listview.setMenuCreator(creator);
-        initTodayData();
         adapter0 = new MyListViewAdapter(this, todayTaskItems, 0);
         todo_listview.setAdapter(adapter0);
 
@@ -298,7 +346,6 @@ public class MainActivity extends AppCompatActivity
     private void setInboxTaskListView() {
         inbox_listview = findViewById(R.id.inbox_listview);
         inbox_listview.setMenuCreator(creator);
-        initInboxData();
         adapter1 = new MyListViewAdapter(this, inboxTaskItems, 1);
         inbox_listview.setAdapter(adapter1);
 
@@ -313,6 +360,14 @@ public class MainActivity extends AppCompatActivity
 
         // 设置置顶操作的点击事件
         adapter1.setOnItemPutTodayClickListener(myOnItemPutTodayListener1);
+    }
+
+    private void initDoneTaskListView() {
+        donetask_layout = findViewById(R.id.donetask_layout);
+        donetask_listview = findViewById(R.id.donetask_listview);
+        adapter2 = new MyListViewAdapter(MainActivity.this, doneTaskItems, 2);
+        donetask_listview.setAdapter(adapter2);
+        adapter2.setOnItemDoneClickListener(myOnItemDoneListener2);
     }
 
     // 设置左滑按钮样式
@@ -336,36 +391,6 @@ public class MainActivity extends AppCompatActivity
             menu.addMenuItem(deleteItem);
         }
     };
-
-    // 设置今日待办列表中的数据
-    private void initTodayData() {
-        todayTaskItems = new ArrayList<>();
-
-        // 添加任务信息
-        todayTaskItems.add(new TaskItem(false, "点击左侧的小黑框Done掉任务", true));
-        todayTaskItems.add(new TaskItem(false, "任务可以添加描述和子任务", true));
-        todayTaskItems.add(new TaskItem(false, "左滑有惊喜(＾－＾)", true));
-    }
-
-    // 设置收件箱列表中的数据
-    private void initInboxData() {
-        inboxTaskItems = new ArrayList<>();
-
-        // 添加任务信息
-        inboxTaskItems.add(new TaskItem(false, "每天从「收件箱」里选任务到「今日待办」", false));
-        inboxTaskItems.add(new TaskItem(false, "番茄工作法，了解一下", false));
-        inboxTaskItems.add(new TaskItem(false, "文字太慢？摇一摇语音输入任务", false));
-        inboxTaskItems.add(new TaskItem(false, "从侧边栏可以进入「已完成」的任务哦", false));
-    }
-
-    // 设置已完成列表中的数据
-    private void initDoneTaskData() {
-        doneTaskItems = new ArrayList<>();
-
-        // 添加任务信息
-        doneTaskItems.add(new TaskItem(true, "这是一条已经完成的任务", false));
-        doneTaskItems.add(new TaskItem(true, "重做任务？点左侧小黑框移回「收件箱」", false));
-    }
 
     private void fixRollConflict() {
         scrollView = findViewById(R.id.scrollView);
@@ -433,8 +458,30 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+    private void refreshData() {
+        if (db == null) {
+            db = new DatabaseHelper(this);
+        }
+
+        todayTaskItems.clear();
+        inboxTaskItems.clear();
+        doneTaskItems.clear();
+
+        ArrayList<TaskItem> Items0 = (ArrayList<TaskItem>) db.getTodayTasks();
+        ArrayList<TaskItem> Items1 = (ArrayList<TaskItem>) db.getInboxTasks();
+        ArrayList<TaskItem> Items2 = (ArrayList<TaskItem>) db.getDoneTasks();
+
+        todayTaskItems.addAll(Items0);
+        inboxTaskItems.addAll(Items1);
+        doneTaskItems.addAll(Items2);
+
+        refreshListView();
+    }
+
     @Override
     protected void onResume() {
+        super.onResume();
+
         //获取 SensorManager 负责管理传感器
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         if (mSensorManager != null) {
@@ -445,7 +492,9 @@ public class MainActivity extends AppCompatActivity
             }
         }
 
-        super.onResume();
+        // 从数据库中读取数据，更新UI
+        refreshData();
+
     }
 
     @Override
@@ -456,6 +505,11 @@ public class MainActivity extends AppCompatActivity
         super.onPause();
     }
 
+    @Override
+    protected void onDestroy() {
+        db.closeDB();
+        super.onDestroy();
+    }
 
     private void setAddTask() {
         Button btn_addtodaytask = findViewById(R.id.btn_addtodaytask);
@@ -490,12 +544,14 @@ public class MainActivity extends AppCompatActivity
                 boolean isTodayTask = (tag == 0);
 
                 if (newTaskName.length() > 0) {
-                    TaskItem newTaskItem = new TaskItem(false, newTaskName, isTodayTask);
+                    TaskItem newTaskItem = new TaskItem(newTaskName, isTodayTask, new Date().getTime());
+                    newTaskItem.setID(db.createTask(newTaskItem));  // 把新增的task写入数据库
                     if (isTodayTask) {
                         todayTaskItems.add(0, newTaskItem);
                     } else {
                         inboxTaskItems.add(0, newTaskItem);
                     }
+
                     refreshListView();
                     dialog.dismiss();
                 }
@@ -526,7 +582,6 @@ public class MainActivity extends AppCompatActivity
             InputMethodManager inputManager = (InputMethodManager) editText
                     .getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
             inputManager.showSoftInput(editText, 0);
-
         }
     }
 
@@ -554,6 +609,8 @@ public class MainActivity extends AppCompatActivity
         public void onPutTodayClick(int i) {
             boolean curIsToday = todayTaskItems.get(i).isTodayTask();
             todayTaskItems.get(i).setTodayTask(!curIsToday);
+            todayTaskItems.get(i).setLastMoveTime(new Date().getTime());
+            db.updateTask(todayTaskItems.get(i));  // 在数据库中更新task数据
 
             // 将任务移出“今日待办”，并放回“收件箱”
             if (curIsToday) {
@@ -572,6 +629,8 @@ public class MainActivity extends AppCompatActivity
         public void onPutTodayClick(int i) {
             boolean curIsToday = inboxTaskItems.get(i).isTodayTask();
             inboxTaskItems.get(i).setTodayTask(!curIsToday);
+            inboxTaskItems.get(i).setLastMoveTime(new Date().getTime());
+            db.updateTask(inboxTaskItems.get(i));  // 在数据库中更新task数据
 
             // 将任务移出“收件箱”，并添加至“今日待办”
             if (!curIsToday) {
@@ -676,17 +735,33 @@ public class MainActivity extends AppCompatActivity
     // “今日待办”任务左滑按钮点击事件
     private SwipeMenuListView.OnMenuItemClickListener myOnMenuItemClickListener0 = new SwipeMenuListView.OnMenuItemClickListener() {
         @Override
-        public boolean onMenuItemClick(int position, SwipeMenu menu, int index) {
+        public boolean onMenuItemClick(final int position, SwipeMenu menu, int index) {
             switch (index) {
                 case 0:
                     // 进入番茄钟
-                    Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
-                    intent.putExtra("taskname", todayTaskItems.get(position).getTaskName());
-                    startActivity(intent);
+                    new Thread(new Runnable() {
+                        @Override
+                        // 延迟0.15秒跳转页面，保证左滑按钮复位
+                        public void run() {
+                            try {
+                                Thread.sleep(150);
+                                Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
+                                intent.putExtra("taskname", todayTaskItems.get(position).getTaskName());
+                                startActivity(intent);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }).start();
+
+//                    Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
+//                    intent.putExtra("taskname", todayTaskItems.get(position).getTaskName());
+//                    startActivity(intent);
                     break;
                 case 1:
                     // 删除的逻辑
-                    todayTaskItems.remove(position);
+                    db.deleteTask(todayTaskItems.get(position).getID());  // 从数据库中删除
+                    todayTaskItems.remove(position);  // 从内存中删除
                     refreshListView();
                     //Toast.makeText(MainActivity.this, "删除操作", Toast.LENGTH_SHORT).show();
                     break;
@@ -698,17 +773,29 @@ public class MainActivity extends AppCompatActivity
     // “收件箱”任务左滑按钮点击事件
     private SwipeMenuListView.OnMenuItemClickListener myOnMenuItemClickListener1 = new SwipeMenuListView.OnMenuItemClickListener() {
         @Override
-        public boolean onMenuItemClick(int position, SwipeMenu menu, int index) {
+        public boolean onMenuItemClick(final int position, SwipeMenu menu, int index) {
             switch (index) {
                 case 0:
                     // 进入番茄钟
-                    Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
-                    intent.putExtra("taskname", inboxTaskItems.get(position).getTaskName());
-                    startActivity(intent);
+                    new Thread(new Runnable() {
+                        @Override
+                        // 延迟0.15秒跳转页面，保证左滑按钮复位
+                        public void run() {
+                            try {
+                                Thread.sleep(150);
+                                Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
+                                intent.putExtra("taskname", inboxTaskItems.get(position).getTaskName());
+                                startActivity(intent);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }).start();
                     break;
                 case 1:
                     // 删除的逻辑
-                    inboxTaskItems.remove(position);
+                    db.deleteTask(inboxTaskItems.get(position).getID());  // 从数据库中删除
+                    inboxTaskItems.remove(position);  // 从内存中删除
                     refreshListView();
                     //Toast.makeText(MainActivity.this, "删除操作", Toast.LENGTH_SHORT).show();
                     break;
@@ -721,8 +808,17 @@ public class MainActivity extends AppCompatActivity
     private AdapterView.OnItemClickListener myOnItemClickListener0 = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-            //Toast.makeText(MainActivity.this, todayTaskItems.get(position).getTaskName(), Toast.LENGTH_SHORT).show();
+            long id = todayTaskItems.get(position).getID();
+            String name = todayTaskItems.get(position).getTaskName();
+            boolean istoday = todayTaskItems.get(position).isTodayTask();
+            String description = todayTaskItems.get(position).getDescription();
+
             Intent intent = new Intent(MainActivity.this, TaskdetailActivity.class);
+            intent.putExtra("id", id);
+            intent.putExtra("name", name);
+            intent.putExtra("istoday", istoday);
+            intent.putExtra("description", description);
+
             startActivity(intent);
         }
     };
@@ -731,8 +827,17 @@ public class MainActivity extends AppCompatActivity
     private AdapterView.OnItemClickListener myOnItemClickListener1 = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-            //Toast.makeText(MainActivity.this, todayTaskItems.get(position).getTaskName(), Toast.LENGTH_SHORT).show();
+            long id = inboxTaskItems.get(position).getID();
+            String name = inboxTaskItems.get(position).getTaskName();
+            boolean istoday = inboxTaskItems.get(position).isTodayTask();
+            String description = inboxTaskItems.get(position).getDescription();
+
             Intent intent = new Intent(MainActivity.this, TaskdetailActivity.class);
+            intent.putExtra("id", id);
+            intent.putExtra("name", name);
+            intent.putExtra("istoday", istoday);
+            intent.putExtra("description", description);
+
             startActivity(intent);
         }
     };
@@ -863,7 +968,8 @@ public class MainActivity extends AppCompatActivity
         }
 
         String newTaskName = resultBuffer.toString();
-        TaskItem newTask = new TaskItem(false, newTaskName, false);
+        TaskItem newTask = new TaskItem(newTaskName, false, new Date().getTime());
+        newTask.setID(db.createTask(newTask));  // 把新增的task写入数据库
         inboxTaskItems.add(0, newTask);
         refreshListView();
 

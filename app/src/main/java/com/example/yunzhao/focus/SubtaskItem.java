@@ -5,12 +5,41 @@ package com.example.yunzhao.focus;
  */
 
 public class SubtaskItem {
-    private boolean isDone;
+    private long ID;
     private String subtaskName;
+    private boolean isDone;
+    private long taskID;
 
-    public SubtaskItem(boolean isDone, String subtaskName) {
+
+    public SubtaskItem(long ID, String subtaskName, boolean isDone, long taskID) {
+        this.ID = ID;
+        this.subtaskName = subtaskName;
+        this.isDone = isDone;
+        this.taskID = taskID;
+    }
+
+    public SubtaskItem(String subtaskName, long taskID) {
+        this.subtaskName = subtaskName;
+        this.taskID = taskID;
+
+        this.ID = -1;
+        this.isDone = false;
+    }
+
+    public SubtaskItem(boolean isDone, String subtaskName, long taskID) {
         this.isDone = isDone;
         this.subtaskName = subtaskName;
+        this.taskID = taskID;
+
+        this.ID = -1;
+    }
+
+    public long getID() {
+        return ID;
+    }
+
+    public long getTaskID() {
+        return taskID;
     }
 
     public boolean isDone() {
@@ -19,6 +48,14 @@ public class SubtaskItem {
 
     public String getSubtaskName() {
         return subtaskName;
+    }
+
+    public void setID(long ID) {
+        this.ID = ID;
+    }
+
+    public void setTaskID(long taskID) {
+        this.taskID = taskID;
     }
 
     public void setDone(boolean done) {

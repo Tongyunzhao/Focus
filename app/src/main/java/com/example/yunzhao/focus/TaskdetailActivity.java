@@ -25,12 +25,21 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.yunzhao.focus.helper.DatabaseHelper;
 import com.example.yunzhao.focus.util.StatusBarUtil;
 import com.example.yunzhao.focus.widget.MyListView2;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class TaskdetailActivity extends AppCompatActivity {
+
+    private long taskID = -1;
+    private String name;
+    private boolean istoday;
+    private String description;
+    private boolean isdone;
+    private long lastmovetime;
 
     private EditText et_taskname;
     private EditText et_subtask;
@@ -45,6 +54,9 @@ public class TaskdetailActivity extends AppCompatActivity {
     private SoundPool soundPool;  // 声明一个SoundPool
     private int soundID;  // 创建某个声音对应的音频ID
 
+    // 数据存储
+    private DatabaseHelper db;
+
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -52,16 +64,16 @@ public class TaskdetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_taskdetail);
 
-        // 设置toolbar
-        setToolBar();
+        setToolBar();  // 设置toolbar
+        StatusBarUtil.setStatusBarColor(getWindow(), this);  // 设置状态栏颜色
 
-        // 设置状态栏颜色
-        StatusBarUtil.setStatusBarColor(getWindow(), this);
-
-        initSound();
+        initSound();  // 初始化音效
 
         findView();
+        db = new DatabaseHelper(this);
         initData();
+
+        initSubtaskListView();
 
         et_subtask.setOnEditorActionListener(new TextView.OnEditorActionListener() {
 
@@ -70,7 +82,8 @@ public class TaskdetailActivity extends AppCompatActivity {
                 String newSubtaskName = et_subtask.getText().toString().trim();
                 if (i == EditorInfo.IME_ACTION_DONE && newSubtaskName.length() > 0) {
                     et_subtask.setText("");
-                    SubtaskItem subtaskItem = new SubtaskItem(false, newSubtaskName);
+                    SubtaskItem subtaskItem = new SubtaskItem(newSubtaskName, taskID);
+                    subtaskItem.setID(db.createSubtask(subtaskItem));  // 赋值ID并存入数据库
                     subtaskItems.add(subtaskItem);
                     adapter.notifyDataSetChanged();
                 }
@@ -81,6 +94,7 @@ public class TaskdetailActivity extends AppCompatActivity {
         checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                lastmovetime = new Date().getTime();
                 if (b) {
                     et_taskname.setInputType(InputType.TYPE_NULL);
                     soundPool.play(soundID, 0.5f, 0.5f, 0, 0, 1);
@@ -92,6 +106,18 @@ public class TaskdetailActivity extends AppCompatActivity {
             }
         });
 
+        istodaytask.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                lastmovetime = new Date().getTime();
+            }
+        });
+    }
+
+    private void initSubtaskListView() {
+        adapter = new MyListViewAdapter2(this, subtaskItems);
+        adapter.setOnItemDoneClickListener(myOnItemDoneListener);
+        subtask_listview.setAdapter(adapter);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -116,31 +142,38 @@ public class TaskdetailActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                updateTaskData();
                 finish();
             }
         });
     }
 
+    private void updateTaskData() {
+        name = et_taskname.getText().toString().trim();
+        isdone = checkbox.isChecked();
+        istoday = istodaytask.isChecked();
+        description = et_taskdescription.getText().toString();
+
+        TaskItem task = new TaskItem(taskID, name, isdone, istoday, description, lastmovetime);
+        db.updateTask(task);
+    }
+
     private void initData() {
+        // 获取数据
+        taskID = getIntent().getLongExtra("id", -1);
+        name = getIntent().getStringExtra("name");
+        istoday = getIntent().getBooleanExtra("istoday", false);
+        description = getIntent().getStringExtra("description");
 
-        // 从数据库中读取task数据
+        // 设置UI
+        et_taskname.setText(name);
+        istodaytask.setChecked(istoday);
+        et_taskdescription.setText(description);
 
-        et_taskname.setText("写毕业论文");
-
-        initSubtaskData();
-        adapter = new MyListViewAdapter2(this, subtaskItems);
-        adapter.setOnItemDoneClickListener(myOnItemDoneListener);
-        subtask_listview.setAdapter(adapter);
-    }
-
-    private void initSubtaskData() {
+        // 初始化子任务信息
         subtaskItems = new ArrayList<>();
-
-        // 添加子任务信息
-        subtaskItems.add(new SubtaskItem(true, "确定毕业论文目录结构"));
-        subtaskItems.add(new SubtaskItem(false, "设计APP的功能和页面"));
+        subtaskItems = (ArrayList<SubtaskItem>) db.getSubtasksByTask(taskID);
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -154,14 +187,13 @@ public class TaskdetailActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_pomodoro) {
+            updateTaskData();
             Intent intent = new Intent(TaskdetailActivity.this, PomodoroActivity.class);
             intent.putExtra("taskname", et_taskname.getText().toString());
             startActivity(intent);
         } else if (id == R.id.action_delete) {
-            // 从数据库中删除这条任务
-
+            db.deleteTask(taskID);  // 从数据库中删除这条任务
             finish();
-            //Toast.makeText(this, "删除操作", Toast.LENGTH_SHORT).show();
         }
 
         return super.onOptionsItemSelected(item);
@@ -172,6 +204,7 @@ public class TaskdetailActivity extends AppCompatActivity {
         public void onDoneClick(final int i) {
             boolean curCheckedStatus = subtaskItems.get(i).isDone();
             subtaskItems.get(i).setDone(!curCheckedStatus);
+            db.updateSubtask(subtaskItems.get(i));  // 存入数据库
 
             // 播放音效
             if (subtaskItems.get(i).isDone())
@@ -179,7 +212,13 @@ public class TaskdetailActivity extends AppCompatActivity {
 
             // 更新删除线的UI
             adapter.notifyDataSetChanged();
-
         }
     };
+
+
+    @Override
+    protected void onDestroy() {
+        db.closeDB();
+        super.onDestroy();
+    }
 }
