@@ -120,7 +120,7 @@ public class MainActivity extends AppCompatActivity
     private int soundID_;  // 开始语音识别的音效
 
     // 摇一摇操作
-    private static final int SENSOR_SHAKE = 40;
+    private static final int SENSOR_SHAKE = 35;
     private boolean isShake = false;
     private SensorManager mSensorManager;
     private Sensor mAccelerometerSensor;
@@ -224,19 +224,19 @@ public class MainActivity extends AppCompatActivity
 
     private void writeSampleTaskToDB() {
         // “今日待办”示例task
-        db.createTask(new TaskItem("点击左侧的小黑框Done掉任务", true, new Date().getTime()));
-        db.createTask(new TaskItem("任务可以添加描述和子任务", true, new Date().getTime()));
         db.createTask(new TaskItem("左滑还有操作哦(＾－＾)", true, new Date().getTime()));
-        
+        db.createTask(new TaskItem("任务可以添加描述和子任务", true, new Date().getTime()));
+        db.createTask(new TaskItem("点击左侧的小黑框Done掉任务", true, new Date().getTime()));
+
         // “收件箱”示例task
-        db.createTask(new TaskItem("每天从「收件箱」里选任务到「今日待办」", false, new Date().getTime()));
+        db.createTask(new TaskItem("从侧边栏可以进入「已完成」的任务哦", false, new Date().getTime()));
         db.createTask(new TaskItem("番茄工作法，了解一下", false, new Date().getTime()));
         db.createTask(new TaskItem("文字太慢？摇一摇语音输入任务", false, new Date().getTime()));
-        db.createTask(new TaskItem("从侧边栏可以进入「已完成」的任务哦", false, new Date().getTime()));
+        db.createTask(new TaskItem("每天从「收件箱」里选任务到「今日待办」", false, new Date().getTime()));
 
         // “已完成”示例task
-        db.createTask(new TaskItem(true, "这是一条已经完成的任务", false, new Date().getTime()));
         db.createTask(new TaskItem(true, "重做任务？点左侧小黑框移回「收件箱」", false, new Date().getTime()));
+        db.createTask(new TaskItem(true, "这是一条已经完成的任务", false, new Date().getTime()));
     }
 
     private void initData() {
@@ -930,22 +930,22 @@ public class MainActivity extends AppCompatActivity
     /**
      * 听写UI监听器
      */
-    private RecognizerDialogListener mRecognizerDialogListener = new RecognizerDialogListener() {
-        public void onResult(RecognizerResult results, boolean isLast) {
-            if (!isLast)
-                addTask(results);
-        }
-
-        /**
-         * 识别回调错误.
-         */
-        public void onError(SpeechError error) {
-            mIatDialog.dismiss();
-            isShake = false;
-            Snackbar.make(scrollView, "你好像没有说话哦", Snackbar.LENGTH_SHORT).show();
-        }
-
-    };
+//    private RecognizerDialogListener mRecognizerDialogListener = new RecognizerDialogListener() {
+//        public void onResult(RecognizerResult results, boolean isLast) {
+//            if (!isLast)
+//                addTask(results);
+//        }
+//
+//        /**
+//         * 识别回调错误.
+//         */
+//        public void onError(SpeechError error) {
+//            mIatDialog.dismiss();
+//            isShake = false;
+//            Snackbar.make(scrollView, "你好像没有说话哦", Snackbar.LENGTH_SHORT).show();
+//        }
+//
+//    };
 
 
     private void addTask(RecognizerResult results) {
@@ -1082,7 +1082,14 @@ public class MainActivity extends AppCompatActivity
             // Tips：
             // 错误码：10118(您没有说话)，可能是录音机权限被禁，需要提示用户打开应用的录音权限。
             //Toast.makeText(MainActivity.this, error.getPlainDescription(true), Toast.LENGTH_SHORT).show();
-            Snackbar.make(scrollView, "你好像没有说话哦", Snackbar.LENGTH_SHORT).show();
+
+            if (error.getErrorCode() == 10118) {
+                Snackbar.make(scrollView, "你好像没有说话哦", Snackbar.LENGTH_SHORT).show();
+            } else if (error.getErrorCode() == 20001 || error.getErrorCode() == 20002 || error.getErrorCode() == 20003) {
+                Snackbar.make(scrollView, "要连网才能使用「语音输入」功能啦", Snackbar.LENGTH_SHORT).show();
+            }
+
+            yuyinDialog.dismiss();
             isShake = false;
         }
 
