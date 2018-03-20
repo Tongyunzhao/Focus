@@ -3,6 +3,7 @@ package com.example.yunzhao.focus;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.media.SoundPool;
 import android.os.Build;
 import android.os.Handler;
@@ -21,9 +22,9 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.yunzhao.focus.helper.DatabaseHelper;
 import com.example.yunzhao.focus.util.StatusBarUtil;
@@ -49,6 +50,7 @@ public class TaskdetailActivity extends AppCompatActivity {
     private MyListViewAdapter2 adapter;
     private CheckBox checkbox;
     private CheckBox istodaytask;
+    //private LinearLayout linearlayout;
 
     // 音效
     private SoundPool soundPool;  // 声明一个SoundPool
@@ -133,11 +135,14 @@ public class TaskdetailActivity extends AppCompatActivity {
         subtask_listview = findViewById(R.id.subtask_listview);
         checkbox = findViewById(R.id.checkbox);
         istodaytask = findViewById(R.id.istodaytask);
+        //linearlayout = findViewById(R.id.linearlayout);
     }
 
     private void setToolBar() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("");
+        TextView toolbar_title = findViewById(R.id.toolbar_title);
+        toolbar_title.setTypeface(Typeface.SERIF);
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
@@ -164,6 +169,7 @@ public class TaskdetailActivity extends AppCompatActivity {
         name = getIntent().getStringExtra("name");
         istoday = getIntent().getBooleanExtra("istoday", false);
         description = getIntent().getStringExtra("description");
+        lastmovetime = getIntent().getLongExtra("lastmovetime", 0);
 
         // 设置UI
         et_taskname.setText(name);

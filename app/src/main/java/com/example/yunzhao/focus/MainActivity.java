@@ -3,11 +3,13 @@ package com.example.yunzhao.focus;
 import android.Manifest;
 import android.content.ClipData;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.hardware.Sensor;
@@ -15,17 +17,20 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.SoundPool;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -112,6 +117,7 @@ public class MainActivity extends AppCompatActivity
 
     // 标记
     private float startX = 0, curX = 0, startY = 0, curY = 0;  // 记录手指触摸的位置
+    private boolean newTouch = true;
     private int operation_position;  // 记录当前要进行操作的item位置
 
     // 音效
@@ -127,7 +133,6 @@ public class MainActivity extends AppCompatActivity
 
     // 科大讯飞语音识别
     private SpeechRecognizer mIat = null;  // 语音听写对象
-    private RecognizerDialog mIatDialog = null;  // 语音听写UI
     private String mEngineType = SpeechConstant.TYPE_CLOUD;  // 引擎类型
     private HashMap<String, String> mIatResults = new LinkedHashMap<String, String>();  // 用HashMap存储听写结果
     int ret = 0; // 函数调用返回值
@@ -170,7 +175,7 @@ public class MainActivity extends AppCompatActivity
                     doneTaskItems.remove(operation_position);
                     inboxTaskItems.add(0, doneTaskItem2);
                     refreshListView();
-                    Snackbar.make(scrollView, "已将该任务移回「收件箱」", Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(scrollView, "已将该任务移回「收件箱」", Snackbar.LENGTH_LONG).show();
                     break;
             }
         }
@@ -194,7 +199,7 @@ public class MainActivity extends AppCompatActivity
         db = new DatabaseHelper(this);
         sp = getSharedPreferences(FILE_NAME, 0);
         Boolean user_first = sp.getBoolean("FIRST", true);
-        if (user_first){//第一次
+        if (user_first) {//第一次
             sp.edit().putBoolean("FIRST", false).commit();
             writeSampleTaskToDB();
         }
@@ -250,13 +255,8 @@ public class MainActivity extends AppCompatActivity
 
     private void initYuYin() {
         mIat = null;
-        mIatDialog = null;
-
         // 使用SpeechRecognizer对象，可根据回调消息自定义界面
         mIat = SpeechRecognizer.createRecognizer(this, mInitListener);
-        // 初始化听写Dialog，如果只使用有UI听写功能，无需创建SpeechRecognizer
-        // 使用UI听写功能，请根据sdk文件目录下的notice.txt,放置布局文件和图片资源
-        mIatDialog = new RecognizerDialog(this, mInitListener);
     }
 
     private void setToolbar() {
@@ -265,6 +265,7 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
         toolbar_title = findViewById(R.id.toolbar_title);
         toolbar_title.setText(R.string.app_name);
+        toolbar_title.setTypeface(Typeface.SERIF);
     }
 
     private void setDrawerLayout() {
@@ -403,17 +404,26 @@ public class MainActivity extends AppCompatActivity
                     case MotionEvent.ACTION_DOWN:
                         startX = motionEvent.getX();
                         startY = motionEvent.getY();
+                        newTouch = true;
                         //Toast.makeText(MainActivity.this, "0:startY="+startY, Toast.LENGTH_SHORT).show();
                         break;
                     case MotionEvent.ACTION_MOVE:
                         curX = motionEvent.getX();
                         curY = motionEvent.getY();
-                        if (Math.abs(curY - startY) > 100 && startX - curX < 60) {
-                            //Toast.makeText(MainActivity.this, "1:curY="+curY, Toast.LENGTH_SHORT).show();
-                            scrollView.requestDisallowInterceptTouchEvent(false);
-                        } else {
-                            //Toast.makeText(MainActivity.this, "2:curY="+curY, Toast.LENGTH_SHORT).show();
-                            scrollView.requestDisallowInterceptTouchEvent(true);
+                        if (newTouch) {
+                            // 左滑按钮出现后，本次触摸事件不再处理Scrollview的滑动
+                            if (startX - curX > 20 && Math.abs(curY - startY) < 50) {
+                                // Toast.makeText(MainActivity.this, "触发左滑", Toast.LENGTH_SHORT).show();
+                                newTouch = false;
+                            }
+
+                            if (Math.abs(curY - startY) > 100) {
+                                //Toast.makeText(MainActivity.this, "1:curY="+curY, Toast.LENGTH_SHORT).show();
+                                scrollView.requestDisallowInterceptTouchEvent(false);
+                            } else {
+                                //Toast.makeText(MainActivity.this, "2:curY="+curY, Toast.LENGTH_SHORT).show();
+                                scrollView.requestDisallowInterceptTouchEvent(true);
+                            }
                         }
                         break;
                     case MotionEvent.ACTION_UP:
@@ -434,17 +444,26 @@ public class MainActivity extends AppCompatActivity
                     case MotionEvent.ACTION_DOWN:
                         startX = motionEvent.getX();
                         startY = motionEvent.getY();
+                        newTouch = true;
                         //Toast.makeText(MainActivity.this, "0:startY="+startY, Toast.LENGTH_SHORT).show();
                         break;
                     case MotionEvent.ACTION_MOVE:
                         curX = motionEvent.getX();
                         curY = motionEvent.getY();
-                        if (Math.abs(curY - startY) > 100 && startX - curX < 60) {
-                            //Toast.makeText(MainActivity.this, "1:curY="+curY, Toast.LENGTH_SHORT).show();
-                            scrollView.requestDisallowInterceptTouchEvent(false);
-                        } else {
-                            //Toast.makeText(MainActivity.this, "2:curY="+curY, Toast.LENGTH_SHORT).show();
-                            scrollView.requestDisallowInterceptTouchEvent(true);
+                        if (newTouch) {
+                            // 左滑按钮出现后，本次触摸事件不再处理Scrollview的滑动
+                            if (startX - curX > 20 && Math.abs(curY - startY) < 50) {
+                                // Toast.makeText(MainActivity.this, "触发左滑", Toast.LENGTH_SHORT).show();
+                                newTouch = false;
+                            }
+
+                            if (Math.abs(curY - startY) > 100) {
+                                //Toast.makeText(MainActivity.this, "1:curY="+curY, Toast.LENGTH_SHORT).show();
+                                scrollView.requestDisallowInterceptTouchEvent(false);
+                            } else {
+                                //Toast.makeText(MainActivity.this, "2:curY="+curY, Toast.LENGTH_SHORT).show();
+                                scrollView.requestDisallowInterceptTouchEvent(true);
+                            }
                         }
                         break;
                     case MotionEvent.ACTION_UP:
@@ -475,6 +494,10 @@ public class MainActivity extends AppCompatActivity
         inboxTaskItems.addAll(Items1);
         doneTaskItems.addAll(Items2);
 
+//        for (int i = 0; i < Items1.size(); i++) {
+//            Log.e("inboxdata", i+":"+Items1.get(i).getLastMoveTime());
+//        }
+
         refreshListView();
     }
 
@@ -494,7 +517,6 @@ public class MainActivity extends AppCompatActivity
 
         // 从数据库中读取数据，更新UI
         refreshData();
-
     }
 
     @Override
@@ -548,8 +570,10 @@ public class MainActivity extends AppCompatActivity
                     newTaskItem.setID(db.createTask(newTaskItem));  // 把新增的task写入数据库
                     if (isTodayTask) {
                         todayTaskItems.add(0, newTaskItem);
+                        Snackbar.make(scrollView, "成功添加一条任务到「今日待办」", Snackbar.LENGTH_LONG).show();
                     } else {
                         inboxTaskItems.add(0, newTaskItem);
+                        Snackbar.make(scrollView, "成功添加一条任务到「收件箱」", Snackbar.LENGTH_LONG).show();
                     }
 
                     refreshListView();
@@ -568,7 +592,6 @@ public class MainActivity extends AppCompatActivity
                 showKeyboard(dialog.getEditText());
             }
         }, 200);
-
     }
 
     public void showKeyboard(EditText editText) {
@@ -591,6 +614,7 @@ public class MainActivity extends AppCompatActivity
             case MotionEvent.ACTION_DOWN:
                 startX = motionEvent.getX();
                 startY = motionEvent.getY();
+                newTouch = true;
                 break;
         }
         return false;
@@ -607,18 +631,16 @@ public class MainActivity extends AppCompatActivity
     private MyListViewAdapter.onItemPutTodayListener myOnItemPutTodayListener0 = new MyListViewAdapter.onItemPutTodayListener() {
         @Override
         public void onPutTodayClick(int i) {
-            boolean curIsToday = todayTaskItems.get(i).isTodayTask();
-            todayTaskItems.get(i).setTodayTask(!curIsToday);
+            todayTaskItems.get(i).setTodayTask(false);
             todayTaskItems.get(i).setLastMoveTime(new Date().getTime());
             db.updateTask(todayTaskItems.get(i));  // 在数据库中更新task数据
 
             // 将任务移出“今日待办”，并放回“收件箱”
-            if (curIsToday) {
-                TaskItem taskItem = todayTaskItems.get(i);
-                todayTaskItems.remove(i);
-                inboxTaskItems.add(0, taskItem);
-                refreshListView();
-            }
+            TaskItem taskItem = todayTaskItems.get(i);
+            todayTaskItems.remove(i);
+            inboxTaskItems.add(0, taskItem);
+            refreshListView();
+            Snackbar.make(scrollView, "已将该任务移动至「收件箱」", Snackbar.LENGTH_LONG).show();
         }
     };
 
@@ -627,18 +649,16 @@ public class MainActivity extends AppCompatActivity
     private MyListViewAdapter.onItemPutTodayListener myOnItemPutTodayListener1 = new MyListViewAdapter.onItemPutTodayListener() {
         @Override
         public void onPutTodayClick(int i) {
-            boolean curIsToday = inboxTaskItems.get(i).isTodayTask();
-            inboxTaskItems.get(i).setTodayTask(!curIsToday);
+            inboxTaskItems.get(i).setTodayTask(true);
             inboxTaskItems.get(i).setLastMoveTime(new Date().getTime());
             db.updateTask(inboxTaskItems.get(i));  // 在数据库中更新task数据
 
             // 将任务移出“收件箱”，并添加至“今日待办”
-            if (!curIsToday) {
-                TaskItem taskItem = inboxTaskItems.get(i);
-                inboxTaskItems.remove(i);
-                todayTaskItems.add(0, taskItem);
-                refreshListView();
-            }
+            TaskItem taskItem = inboxTaskItems.get(i);
+            inboxTaskItems.remove(i);
+            todayTaskItems.add(0, taskItem);
+            refreshListView();
+            Snackbar.make(scrollView, "已将该任务移动至「今日待办」", Snackbar.LENGTH_LONG).show();
         }
     };
 
@@ -647,12 +667,10 @@ public class MainActivity extends AppCompatActivity
     private onItemDoneListener myOnItemDoneListener0 = new onItemDoneListener() {
         @Override
         public void onDoneClick(final int i) {
-            boolean curCheckedStatus = todayTaskItems.get(i).isDone();
-            todayTaskItems.get(i).setDone(!curCheckedStatus);
+            todayTaskItems.get(i).setDone(true);
 
             // 播放音效
-            if (todayTaskItems.get(i).isDone())
-                soundPool.play(soundID, 0.5f, 0.5f, 0, 0, 1);
+            soundPool.play(soundID, 0.5f, 0.5f, 0, 0, 1);
 
             // 更新删除线的UI
             refreshListView();
@@ -678,12 +696,10 @@ public class MainActivity extends AppCompatActivity
     private onItemDoneListener myOnItemDoneListener1 = new onItemDoneListener() {
         @Override
         public void onDoneClick(final int i) {
-            boolean curCheckedStatus = inboxTaskItems.get(i).isDone();
-            inboxTaskItems.get(i).setDone(!curCheckedStatus);
+            inboxTaskItems.get(i).setDone(true);
 
             // 播放音效
-            if (inboxTaskItems.get(i).isDone())
-                soundPool.play(soundID, 0.5f, 0.5f, 0, 0, 1);
+            soundPool.play(soundID, 0.5f, 0.5f, 0, 0, 1);
 
             // 更新删除线的UI
             refreshListView();
@@ -709,7 +725,6 @@ public class MainActivity extends AppCompatActivity
     private onItemDoneListener myOnItemDoneListener2 = new onItemDoneListener() {
         @Override
         public void onDoneClick(final int i) {
-
             doneTaskItems.get(i).setDone(false);
 
             // 更新删除线的UI
@@ -812,12 +827,14 @@ public class MainActivity extends AppCompatActivity
             String name = todayTaskItems.get(position).getTaskName();
             boolean istoday = todayTaskItems.get(position).isTodayTask();
             String description = todayTaskItems.get(position).getDescription();
+            Long lastmovetime = todayTaskItems.get(position).getLastMoveTime();
 
             Intent intent = new Intent(MainActivity.this, TaskdetailActivity.class);
             intent.putExtra("id", id);
             intent.putExtra("name", name);
             intent.putExtra("istoday", istoday);
             intent.putExtra("description", description);
+            intent.putExtra("lastmovetime", lastmovetime);
 
             startActivity(intent);
         }
@@ -831,12 +848,14 @@ public class MainActivity extends AppCompatActivity
             String name = inboxTaskItems.get(position).getTaskName();
             boolean istoday = inboxTaskItems.get(position).isTodayTask();
             String description = inboxTaskItems.get(position).getDescription();
+            Long lastmovetime = inboxTaskItems.get(position).getLastMoveTime();
 
             Intent intent = new Intent(MainActivity.this, TaskdetailActivity.class);
             intent.putExtra("id", id);
             intent.putExtra("name", name);
             intent.putExtra("istoday", istoday);
             intent.putExtra("description", description);
+            intent.putExtra("lastmovetime", lastmovetime);
 
             startActivity(intent);
         }
@@ -860,19 +879,17 @@ public class MainActivity extends AppCompatActivity
 
                 Log.d("yuyin", "进入onSensorChanger");
 
-                /**
-                 * 检查是否有「语音转文字」所需的相应权限
-                 */
+                // 检查是否有「语音转文字」所需的相应权限
                 final boolean isAllGranted = checkPermissionAllGranted(
                         new String[]{
                                 Manifest.permission.RECORD_AUDIO
                         }
                 );
 
+                // 如果有权限，启动语音识别功能；如果没有，申请权限
                 if (isAllGranted) {
                     xunfei();
                 } else {
-                    // 一次请求多个权限, 如果其他有权限是已经授予的将会自动忽略掉
                     ActivityCompat.requestPermissions(
                             MainActivity.this,
                             new String[]{
@@ -880,11 +897,62 @@ public class MainActivity extends AppCompatActivity
                             },
                             MY_PERMISSION_REQUEST_CODE
                     );
-                    isShake = false;
                 }
-
             }
         }
+    }
+
+    /**
+     * 申请权限结果返回处理
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == MY_PERMISSION_REQUEST_CODE) {
+            boolean isAllGranted = true;
+
+            // 判断是否所有的权限都已经授予了
+            for (int grant : grantResults) {
+                if (grant != PackageManager.PERMISSION_GRANTED) {
+                    isAllGranted = false;
+                    break;
+                }
+            }
+
+            // 如果需要的权限都授予了，启动语音识别功能；如果没有，引导用户手动打开权限
+            if (isAllGranted) {
+                xunfei();
+            } else {
+                openAppDetails();
+            }
+        }
+
+        isShake = false;
+    }
+
+    /**
+     * 打开 APP 的详情设置
+     */
+    private void openAppDetails() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("提示");
+        builder.setMessage("使用「语音输入」功能需要开通“麦克风”权限，请到“应用信息 -> 权限”中开通。");
+        builder.setPositiveButton("去开通", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.addCategory(Intent.CATEGORY_DEFAULT);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+                startActivity(intent);
+            }
+        });
+        builder.setNegativeButton("取消", null);
+        builder.show();
     }
 
     @Override
@@ -913,10 +981,10 @@ public class MainActivity extends AppCompatActivity
         //mIat.setParameter("view_tips_plain","false");
 
         // 设置语音前端点:静音超时时间，即用户多长时间不说话则当做超时处理
-        mIat.setParameter(SpeechConstant.VAD_BOS, "5000");
+        mIat.setParameter(SpeechConstant.VAD_BOS, "4000");
 
         // 设置语音后端点:后端点静音检测时间，即用户停止说话多长时间内即认为不再输入， 自动停止录音
-        mIat.setParameter(SpeechConstant.VAD_EOS, "1500");
+        mIat.setParameter(SpeechConstant.VAD_EOS, "700");
 
         // 设置标点符号,设置为"0"返回结果无标点,设置为"1"返回结果有标点
         mIat.setParameter(SpeechConstant.ASR_PTT, "0");
@@ -926,27 +994,6 @@ public class MainActivity extends AppCompatActivity
         mIat.setParameter(SpeechConstant.AUDIO_FORMAT, "wav");
         mIat.setParameter(SpeechConstant.ASR_AUDIO_PATH, Environment.getExternalStorageDirectory() + "/msc/iat.wav");
     }
-
-    /**
-     * 听写UI监听器
-     */
-//    private RecognizerDialogListener mRecognizerDialogListener = new RecognizerDialogListener() {
-//        public void onResult(RecognizerResult results, boolean isLast) {
-//            if (!isLast)
-//                addTask(results);
-//        }
-//
-//        /**
-//         * 识别回调错误.
-//         */
-//        public void onError(SpeechError error) {
-//            mIatDialog.dismiss();
-//            isShake = false;
-//            Snackbar.make(scrollView, "你好像没有说话哦", Snackbar.LENGTH_SHORT).show();
-//        }
-//
-//    };
-
 
     private void addTask(RecognizerResult results) {
         String text = JsonParser.parseIatResult(results.getResultString());
@@ -960,6 +1007,7 @@ public class MainActivity extends AppCompatActivity
             e.printStackTrace();
         }
 
+        mIatResults.clear();
         mIatResults.put(sn, text);
 
         StringBuffer resultBuffer = new StringBuffer();
@@ -975,7 +1023,7 @@ public class MainActivity extends AppCompatActivity
 
         isShake = false;
 
-        Snackbar.make(scrollView, "成功添加一条任务到「收件箱」", Snackbar.LENGTH_SHORT).show();
+        Snackbar.make(scrollView, "成功添加一条任务到「收件箱」", Snackbar.LENGTH_LONG).show();
     }
 
     /**
@@ -987,7 +1035,8 @@ public class MainActivity extends AppCompatActivity
         public void onInit(int code) {
             Log.d("yuyin", "SpeechRecognizer init() code = " + code);
             if (code != ErrorCode.SUCCESS) {
-                Toast.makeText(MainActivity.this, "初始化失败，错误码：" + code, Toast.LENGTH_SHORT).show();
+                // Toast.makeText(MainActivity.this, "初始化失败，错误码：" + code, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "好像出了点小问题", Toast.LENGTH_SHORT).show();
             }
         }
     };
@@ -1011,7 +1060,8 @@ public class MainActivity extends AppCompatActivity
 
         if (mIat == null) {
             // 创建单例失败，与 21001 错误为同样原因，参考 http://bbs.xfyun.cn/forum.php?mod=viewthread&tid=9688
-            Toast.makeText(this, "创建对象失败，请确认 libmsc.so 放置正确，且有调用 createUtility 进行初始化", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "创建对象失败，请确认 libmsc.so 放置正确，且有调用 createUtility 进行初始化", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "好像出了点小问题", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -1023,45 +1073,13 @@ public class MainActivity extends AppCompatActivity
         // 设置参数
         setParam();
 
-        // 显示听写对话框
-//        mIatDialog.setListener(mRecognizerDialogListener);
-//        mIatDialog.show();
-
-
-        // 不显示听写对话框
         ret = mIat.startListening(mRecognizerListener);
         if (ret != ErrorCode.SUCCESS) {
             isShake = false;
             //Toast.makeText(this, "听写失败,错误码：" + ret, Toast.LENGTH_SHORT).show();
-            Snackbar.make(scrollView, "好像出了点小问题", Snackbar.LENGTH_SHORT).show();
+            Snackbar.make(scrollView, "好像出了点小问题，请稍后再试", Snackbar.LENGTH_LONG).show();
         } else {
             showYuYinDialog();
-            //Toast.makeText(this, "请开始说话", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-
-    /**
-     * 申请权限结果返回处理
-     */
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == MY_PERMISSION_REQUEST_CODE) {
-            boolean isAllGranted = true;
-
-            // 判断是否所有的权限都已经授予了
-            for (int grant : grantResults) {
-                if (grant != PackageManager.PERMISSION_GRANTED) {
-                    isAllGranted = false;
-                    break;
-                }
-            }
-
-            if (isAllGranted) {
-                xunfei();
-            }
         }
     }
 
@@ -1084,9 +1102,9 @@ public class MainActivity extends AppCompatActivity
             //Toast.makeText(MainActivity.this, error.getPlainDescription(true), Toast.LENGTH_SHORT).show();
 
             if (error.getErrorCode() == 10118) {
-                Snackbar.make(scrollView, "你好像没有说话哦", Snackbar.LENGTH_SHORT).show();
+                Snackbar.make(scrollView, "你好像没有说话哦", Snackbar.LENGTH_LONG).show();
             } else if (error.getErrorCode() == 20001 || error.getErrorCode() == 20002 || error.getErrorCode() == 20003) {
-                Snackbar.make(scrollView, "要连网才能使用「语音输入」功能啦", Snackbar.LENGTH_SHORT).show();
+                Snackbar.make(scrollView, "要连网才能使用「语音输入」功能啦", Snackbar.LENGTH_LONG).show();
             }
 
             yuyinDialog.dismiss();
