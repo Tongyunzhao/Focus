@@ -30,6 +30,6 @@
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="高效的时间管理工具" />
+        android:text="一个高效的时间管理工具" />
 
 </LinearLayout>

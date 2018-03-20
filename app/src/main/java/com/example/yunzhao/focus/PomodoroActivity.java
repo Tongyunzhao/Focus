@@ -29,6 +29,8 @@ import com.example.yunzhao.focus.widget.CustomCircleProgressBar;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
+
 public class PomodoroActivity extends AppCompatActivity {
 
     private CustomCircleProgressBar progressBar;
@@ -81,12 +83,12 @@ public class PomodoroActivity extends AppCompatActivity {
             initSound();
         }
 
-        // 初始化通知
-        initNotification();
-
         // 初始化任务名
         taskname = findViewById(R.id.taskname);
         taskname.setText(getIntent().getStringExtra("taskname"));
+
+        // 初始化通知
+        initNotification();
 
         progressBar = findViewById(R.id.progress);
         btn_timekeeping = findViewById(R.id.btn_timekeeping);
@@ -108,10 +110,14 @@ public class PomodoroActivity extends AppCompatActivity {
     }
 
     private void initNotification() {
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, PomodoroActivity.class), 0);
-        notification = new Notification.Builder(this).setSmallIcon(R.drawable.ic_launcher_foreground)
+        Intent mainIntent = new Intent(this, PomodoroActivity.class);
+        mainIntent.putExtra("taskname", taskname.getText().toString());
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, mainIntent, FLAG_UPDATE_CURRENT);
+
+        notification = new Notification.Builder(this).setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("完成一次专注").setContentText("休息一下，一会继续吧")
-                .setContentIntent(pendingIntent).setAutoCancel(true).build();
+                .setContentIntent(pendingIntent).setAutoCancel(true)
+                .setDefaults(Notification.DEFAULT_VIBRATE).build();
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
     }
 

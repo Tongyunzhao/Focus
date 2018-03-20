@@ -1015,15 +1015,16 @@ public class MainActivity extends AppCompatActivity
             resultBuffer.append(mIatResults.get(key));
         }
 
-        String newTaskName = resultBuffer.toString();
-        TaskItem newTask = new TaskItem(newTaskName, false, new Date().getTime());
-        newTask.setID(db.createTask(newTask));  // 把新增的task写入数据库
-        inboxTaskItems.add(0, newTask);
-        refreshListView();
+        String newTaskName = resultBuffer.toString().trim();
+        if (newTaskName.length() > 0) {
+            TaskItem newTask = new TaskItem(newTaskName, false, new Date().getTime());
+            newTask.setID(db.createTask(newTask));  // 把新增的task写入数据库
+            inboxTaskItems.add(0, newTask);
+            refreshListView();
+            Snackbar.make(scrollView, "成功添加一条任务到「收件箱」", Snackbar.LENGTH_LONG).show();
+        }
 
         isShake = false;
-
-        Snackbar.make(scrollView, "成功添加一条任务到「收件箱」", Snackbar.LENGTH_LONG).show();
     }
 
     /**
