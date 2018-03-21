@@ -61,10 +61,11 @@
                         android:id="@+id/checkbox"
                         android:layout_width="30dp"
                         android:layout_height="30dp"
-                        android:buttonTint="@android:color/black"
+                        android:background="@drawable/checkbox_done"
+                        android:button="@null"
                         android:gravity="center"
-                        android:scaleX="0.8"
-                        android:scaleY="0.8" />
+                        android:scaleX="0.9"
+                        android:scaleY="0.9" />
                 </LinearLayout>
 
                 <EditText

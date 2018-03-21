@@ -13,9 +13,10 @@
         android:layout_width="30dp"
         android:layout_height="30dp"
         android:gravity="center"
-        android:buttonTint="@android:color/black"
-        android:scaleX="0.8"
-        android:scaleY="0.8"/>
+        android:background="@drawable/checkbox_done"
+        android:button="@null"
+        android:scaleX="0.9"
+        android:scaleY="0.9"/>
 
     <TextView
         android:id="@+id/subtaskname"
