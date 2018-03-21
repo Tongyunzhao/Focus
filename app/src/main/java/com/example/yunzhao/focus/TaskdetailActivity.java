@@ -59,6 +59,8 @@ public class TaskdetailActivity extends AppCompatActivity {
     // 数据存储
     private DatabaseHelper db;
 
+    private boolean isDelete = false;
+
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -147,7 +149,6 @@ public class TaskdetailActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                updateTaskData();
                 finish();
             }
         });
@@ -193,12 +194,12 @@ public class TaskdetailActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_pomodoro) {
-            updateTaskData();
             Intent intent = new Intent(TaskdetailActivity.this, PomodoroActivity.class);
             intent.putExtra("taskname", et_taskname.getText().toString());
             startActivity(intent);
         } else if (id == R.id.action_delete) {
             db.deleteTask(taskID);  // 从数据库中删除这条任务
+            isDelete = true;
             finish();
         }
 
@@ -221,6 +222,14 @@ public class TaskdetailActivity extends AppCompatActivity {
         }
     };
 
+
+    @Override
+    protected void onPause() {
+        if (!isDelete)
+            updateTaskData();
+
+        super.onPause();
+    }
 
     @Override
     protected void onDestroy() {
