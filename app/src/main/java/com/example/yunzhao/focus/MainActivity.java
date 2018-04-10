@@ -181,6 +181,7 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -225,6 +226,7 @@ public class MainActivity extends AppCompatActivity
         SpeechUtility.createUtility(this, SpeechConstant.APPID + "=5aac8016");
         initYuYin();
 
+
     }
 
     private void writeSampleTaskToDB() {
@@ -243,6 +245,7 @@ public class MainActivity extends AppCompatActivity
         db.createTask(new TaskItem(true, "重做任务？点左侧小黑框移回「收件箱」", false, new Date().getTime()));
         db.createTask(new TaskItem(true, "这是一条已经完成的任务", false, new Date().getTime()));
     }
+
 
     private void initData() {
         todayTaskItems = new ArrayList<>();

@@ -4,8 +4,11 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.SoundPool;
 import android.os.Build;
 import android.os.Handler;
@@ -32,63 +35,28 @@ import java.util.TimerTask;
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 
 public class PomodoroActivity extends AppCompatActivity {
-
+    // UI
     private CustomCircleProgressBar progressBar;
-    private int progress = 0;
     private Button btn_timekeeping;
     private TextView taskname;
 
+    private MsgReceiver msgReceiver;
+    private Intent mIntent = null;
+
     // 番茄钟时长设置为1500秒，即25分钟
     int POMODORO_LENGTH = 1500;
-
-    // 音效
-    private SoundPool soundPool;  // 声明一个SoundPool
-    private int soundID;  // 创建某个声音对应的音频ID
-
-    // 通知
-    private Notification notification;
-    private NotificationManager notificationManager;
-
-    @SuppressLint("HandlerLeak")
-    Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            if (msg.what == 1) {
-                progressBar.setProgress(progress);
-                if (progress == POMODORO_LENGTH) {
-                    soundPool.play(soundID, 0.5f, 0.5f, 0, 0, 1);  // 播放音效
-                    notificationManager.notify(0, notification);
-                    finishPomodoro();
-                } else {
-                    progress++;
-                }
-            }
-            super.handleMessage(msg);
-        }
-    };
-
-    Timer timer = null;
-    TimerTask task = null;
+    private int progress = 0;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pomodoro);
-
         setToolbar();
-
-        // 初始化音效
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            initSound();
-        }
 
         // 初始化任务名
         taskname = findViewById(R.id.taskname);
         taskname.setText(getIntent().getStringExtra("taskname"));
-
-        // 初始化通知
-        initNotification();
 
         progressBar = findViewById(R.id.progress);
         btn_timekeeping = findViewById(R.id.btn_timekeeping);
@@ -97,7 +65,12 @@ public class PomodoroActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (btn_timekeeping.getText().toString().equals("开始专注")) {
-                    startTimer();
+                    // 开启service
+                    mIntent = new Intent(PomodoroActivity.this, ClockService.class);
+                    mIntent.putExtra("taskname", taskname.getText().toString());
+                    startService(mIntent);
+
+                    // 更新UI
                     btn_timekeeping.setText("放弃");
                     btn_timekeeping.setBackground(getDrawable(R.drawable.btn2_selector));
                     btn_timekeeping.setTextColor(getResources().getColor(R.color.grey));
@@ -106,19 +79,6 @@ public class PomodoroActivity extends AppCompatActivity {
                 }
             }
         });
-
-    }
-
-    private void initNotification() {
-        Intent mainIntent = new Intent(this, PomodoroActivity.class);
-        mainIntent.putExtra("taskname", taskname.getText().toString());
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, mainIntent, FLAG_UPDATE_CURRENT);
-
-        notification = new Notification.Builder(this).setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("完成一次专注").setContentText("休息一下，一会继续吧")
-                .setContentIntent(pendingIntent).setAutoCancel(true)
-                .setDefaults(Notification.DEFAULT_VIBRATE).build();
-        notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
     }
 
     private void setToolbar() {
@@ -136,89 +96,44 @@ public class PomodoroActivity extends AppCompatActivity {
         });
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    private void initSound() {
-        soundPool = new SoundPool.Builder().build();
-        soundID = soundPool.load(this, R.raw.ring, 1);
-    }
-
-    private void startTimer() {
-        if (timer == null) {
-            timer = new Timer();
-        }
-
-        if (task == null) {
-            task = new TimerTask() {
-                @Override
-                public void run() {
-                    Message message = new Message();
-                    message.what = 1;
-                    handler.sendMessage(message);
-                }
-            };
-        }
-
-        if (timer != null && task != null) {
-            timer.schedule(task, 0, 1000);
-        }
-    }
-
-    private void stopTimer() {
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
-        if (task != null) {
-            task.cancel();
-            task = null;
-        }
-    }
-
-    private void resetPomodoro() {
+    private void finishPomodoro() {
         progress = 0;
         progressBar.setProgress(progress);
         btn_timekeeping.setText("开始专注");
         btn_timekeeping.setBackground(getDrawable(R.drawable.btn1_selector));
         btn_timekeeping.setTextColor(getResources().getColor(R.color.black_overlay));
-    }
 
-    private void finishPomodoro() {
-        stopTimer();
-        resetPomodoro();
+        stopService(mIntent);
     }
 
     private void showDialog() {
-        stopTimer();  // 暂停计时
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("确定放弃专注吗？").setMessage("你正在专注完成一个任务，集中注意力会让你更有效率。")
                 .setNegativeButton("取消", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        startTimer();
                     }
                 })
                 .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        //stopTimer();
-                        resetPomodoro();
+                        finishPomodoro();
                     }
                 }).show();
     }
 
     private void showQuitDialog() {
-        stopTimer();  // 暂停计时
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("确定退出专注吗？").setMessage("你正在专注完成一个任务，集中注意力会让你更有效率。")
                 .setNegativeButton("取消", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        startTimer();
                     }
                 })
                 .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        finishPomodoro();
                         PomodoroActivity.this.finish();
                     }
                 }).show();
@@ -248,4 +163,50 @@ public class PomodoroActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        //动态注册广播接收器
+        msgReceiver = new MsgReceiver();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction("com.example.yunzhao.focus.RECEIVER");
+        registerReceiver(msgReceiver, intentFilter);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        //注销广播
+        unregisterReceiver(msgReceiver);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        //停止服务
+        if (mIntent != null)
+            stopService(mIntent);
+    }
+
+    /**
+     * 广播接收器
+     *
+     * @author len
+     */
+    public class MsgReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //拿到进度，更新UI
+            progress = intent.getIntExtra("progress", 0);
+            progressBar.setProgress(progress);
+
+            if (progress == POMODORO_LENGTH) {
+                finishPomodoro();
+            }
+        }
+    }
 }
