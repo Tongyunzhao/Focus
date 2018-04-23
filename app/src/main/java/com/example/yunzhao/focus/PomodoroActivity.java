@@ -1,9 +1,5 @@
 package com.example.yunzhao.focus;
 
-import android.annotation.SuppressLint;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -11,8 +7,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.SoundPool;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Message;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -21,18 +15,11 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.yunzhao.focus.widget.CustomCircleProgressBar;
-
-import java.util.Timer;
-import java.util.TimerTask;
-
-import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 
 public class PomodoroActivity extends AppCompatActivity {
     // UI
@@ -47,7 +34,15 @@ public class PomodoroActivity extends AppCompatActivity {
     int POMODORO_LENGTH = 1500;
     private int progress = 0;
 
+    // 背景音效
+    private SoundPool soundPool;  // 声明一个SoundPool
+    private int soundID;  // 创建某个声音对应的音频ID
+    private int playID = 0;
+    private boolean isSound = false;
+    private boolean willSound = false;
 
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,6 +52,10 @@ public class PomodoroActivity extends AppCompatActivity {
         // 初始化任务名
         taskname = findViewById(R.id.taskname);
         taskname.setText(getIntent().getStringExtra("taskname"));
+
+        // 初始化背景音效
+        soundPool = new SoundPool.Builder().build();
+        soundID = soundPool.load(this, R.raw.forest, 1);
 
         progressBar = findViewById(R.id.progress);
         btn_timekeeping = findViewById(R.id.btn_timekeeping);
@@ -74,6 +73,12 @@ public class PomodoroActivity extends AppCompatActivity {
                     btn_timekeeping.setText("放弃");
                     btn_timekeeping.setBackground(getDrawable(R.drawable.btn2_selector));
                     btn_timekeeping.setTextColor(getResources().getColor(R.color.grey));
+
+                    // 播放白噪音
+                    if (willSound) {
+                        playID = soundPool.play(soundID, 0.5f, 0.5f, 0, -1, 1);
+                    }
+
                 } else {
                     showDialog();
                 }
@@ -102,6 +107,9 @@ public class PomodoroActivity extends AppCompatActivity {
         btn_timekeeping.setText("开始专注");
         btn_timekeeping.setBackground(getDrawable(R.drawable.btn1_selector));
         btn_timekeeping.setTextColor(getResources().getColor(R.color.black_overlay));
+
+        soundPool.stop(playID);
+        isSound = false;
 
         stopService(mIntent);
     }
@@ -158,6 +166,25 @@ public class PomodoroActivity extends AppCompatActivity {
                     .setPositiveButton("知道啦", null).show();
 
             return true;
+        } else if (id == R.id.action_sound) {
+            if (willSound) {
+                item.setIcon(getResources().getDrawable(R.drawable.ic_nosound));
+                willSound = false;
+            } else {
+                item.setIcon(getResources().getDrawable(R.drawable.ic_sound));
+                willSound = true;
+            }
+
+            if (btn_timekeeping.getText().toString().equals("放弃")) {
+                if (willSound) {
+                    playID = soundPool.play(soundID, 0.5f, 0.5f, 0, -1, 1);
+                } else {
+                    soundPool.stop(playID);
+                }
+                isSound = willSound;
+            }
+
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -190,6 +217,10 @@ public class PomodoroActivity extends AppCompatActivity {
         //停止服务
         if (mIntent != null)
             stopService(mIntent);
+
+        // 停止白噪音
+        soundPool.stop(playID);
+        isSound = false;
     }
 
     /**
@@ -204,7 +235,7 @@ public class PomodoroActivity extends AppCompatActivity {
             progress = intent.getIntExtra("progress", 0);
             progressBar.setProgress(progress);
 
-            if (progress == POMODORO_LENGTH) {
+            if (progress >= POMODORO_LENGTH) {
                 finishPomodoro();
             }
         }

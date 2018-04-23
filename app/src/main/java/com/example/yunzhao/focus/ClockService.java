@@ -78,9 +78,8 @@ public class ClockService extends Service {
                     progress++;
 
                     if (progress == POMODORO_LENGTH) {
-                        soundPool.play(soundID, 0.5f, 0.5f, 0, 0, 1);  // 播放音效
+                        soundPool.play(soundID, 0.5f, 0.5f, 100, 0, 1);  // 播放音效
                         notificationManager.notify(0, notification);
-                        progress++;
                     }
 
                     //发送广播
@@ -90,32 +89,6 @@ public class ClockService extends Service {
             };
             timer.schedule(task, 1000, 1000);
         }
-
-
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                while (progress <= POMODORO_LENGTH) {
-//                    progress++;
-//
-//                    if (progress == POMODORO_LENGTH) {
-//                        soundPool.play(soundID, 0.5f, 0.5f, 0, 0, 1);  // 播放音效
-//                        notificationManager.notify(0, notification);
-//                        progress++;
-//                    }
-//
-//                    //发送广播
-//                    intent.putExtra("progress", progress);
-//                    sendBroadcast(intent);
-//
-//                    try {
-//                        Thread.sleep(1000);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        }).start();
     }
 
     //关闭计时器
