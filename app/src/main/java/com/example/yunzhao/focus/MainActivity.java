@@ -314,13 +314,9 @@ public class MainActivity extends AppCompatActivity
             scrollView.setVisibility(View.GONE);
             donetask_layout.setVisibility(View.VISIBLE);
             toolbar_title.setText(R.string.done);
-
-        } else if (id == R.id.tag_work) {
-            Toast.makeText(this, "标签功能正在开发中，敬请期待", Toast.LENGTH_SHORT).show();
-        } else if (id == R.id.tag_learn) {
-            Toast.makeText(this, "标签功能正在开发中，敬请期待", Toast.LENGTH_SHORT).show();
-        } else if (id == R.id.tag_live) {
-            Toast.makeText(this, "标签功能正在开发中，敬请期待", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.nav_statistics) {
+            Intent intent = new Intent(this, StatisticsActivity.class);
+            startActivity(intent);
         }
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);

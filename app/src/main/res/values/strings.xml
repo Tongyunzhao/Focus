@@ -3,8 +3,11 @@
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="list">清单</string>
+    <string name="my">我的</string>
     <string name="todotask">待办任务</string>
     <string name="donetask">已完成任务</string>
+    <string name="statistics">统计</string>
     <string name="account">账号</string>
     <string name="tag">标签</string>
     <string name="tag_work">#工作</string>

@@ -6,27 +6,39 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_todo"
+            android:checked="true"
             android:icon="@drawable/todo"
-            android:title="@string/todotask"
-            android:checked="true"/>
+            android:title="@string/todotask" />
         <item
             android:id="@+id/nav_done"
             android:icon="@drawable/done"
             android:title="@string/donetask" />
     </group>
 
-    <item android:title="@string/tag">
-        <menu>
-            <item
-                android:id="@+id/tag_work"
-                android:title="@string/tag_work" />
-            <item
-                android:id="@+id/tag_learn"
-                android:title="@string/tag_learn" />
-            <item
-                android:id="@+id/tag_live"
-                android:title="@string/tag_live" />
-        </menu>
-    </item>
+    <group>
+        <item android:title="@string/my">
+            <menu>
+                <item
+                    android:id="@+id/nav_statistics"
+                    android:icon="@drawable/statistics"
+                    android:title="@string/statistics" />
+            </menu>
+        </item>
+    </group>
+
+
+    <!--<item android:title="@string/tag">-->
+    <!--<menu>-->
+    <!--<item-->
+    <!--android:id="@+id/tag_work"-->
+    <!--android:title="@string/tag_work" />-->
+    <!--<item-->
+    <!--android:id="@+id/tag_learn"-->
+    <!--android:title="@string/tag_learn" />-->
+    <!--<item-->
+    <!--android:id="@+id/tag_live"-->
+    <!--android:title="@string/tag_live" />-->
+    <!--</menu>-->
+    <!--</item>-->
 
 </menu>
