@@ -13,6 +13,9 @@ import android.support.annotation.RequiresApi;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.example.yunzhao.focus.helper.DatabaseHelper;
+
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -33,6 +36,7 @@ public class ClockService extends Service {
     private int soundID;  // 创建某个声音对应的音频ID
 
     private String taskname;
+    private long taskID;
 
     // 通知
     private Notification notification;
@@ -40,6 +44,9 @@ public class ClockService extends Service {
 
     private Timer timer = null;
     private TimerTask task = null;
+
+    // 数据存储
+    private DatabaseHelper db;
 
 
     @Override
@@ -51,13 +58,14 @@ public class ClockService extends Service {
             initSound();
         }
 
-        // 初始化通知
-        initNotification();
+        initNotification();  // 初始化通知
+        db = new DatabaseHelper(this);  // 初始化数据库
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         taskname = intent.getStringExtra("taskname");
+        taskID = intent.getLongExtra("taskid", 0);
         startTimer();
         return super.onStartCommand(intent, flags, startId);
     }
@@ -80,6 +88,8 @@ public class ClockService extends Service {
                     if (progress == POMODORO_LENGTH) {
                         soundPool.play(soundID, 0.5f, 0.5f, 100, 0, 1);  // 播放音效
                         notificationManager.notify(0, notification);
+                        // 将操作写入OpRecord表
+                        db.createOpRecord(1, taskID, new Date().getTime());
                     }
 
                     //发送广播
@@ -118,5 +128,6 @@ public class ClockService extends Service {
     public void onDestroy() {
         super.onDestroy();
         stopTimer();
+        db.closeDB();
     }
 }

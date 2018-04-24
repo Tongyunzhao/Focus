@@ -10,8 +10,10 @@ import android.util.Log;
 import com.example.yunzhao.focus.SubtaskItem;
 import com.example.yunzhao.focus.TaskItem;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -19,6 +21,8 @@ import java.util.List;
  */
 
 public class DatabaseHelper extends SQLiteOpenHelper {
+
+    private static final long MSADAY = 24*60*60*1000;
 
     // Logcat tag
     private static final String LOG = "DatabaseHelper";
@@ -32,19 +36,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // Table Names
     private static final String TABLE_TASK = "Tasks";
     private static final String TABLE_SUBTASK = "Subtasks";
+    private static final String TABLE_OPRECORD = "OpRecords";
 
     // Common column names
     private static final String KEY_ID = "id";
     private static final String KEY_NAME = "name";
     private static final String KEY_ISDONE = "isdone";
+    private static final String KEY_TASKID = "taskid";
 
     // TASK Table - column names
     private static final String KEY_ISTODAY = "istoday";
     private static final String KEY_DESCRIPTION = "description";
     private static final String KEY_LASTMOVETIME = "lastmovetime";
 
-    // SUBTASK Table - column names
-    private static final String KEY_TASKID = "taskid";
+    // OPRECORD Table - column names
+    private static final String KEY_TYPE = "type";
+    private static final String KEY_OPTIME = "optime";
 
 
     // Table Create Statements
@@ -68,6 +75,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + KEY_TASKID + " INTEGER"
             + ")";
 
+    // OpRecord table create statement
+    private static final String CREATE_TABLE_OPRECORD = "CREATE TABLE "
+            + TABLE_OPRECORD + "("
+            + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_TYPE + " INTEGER,"
+            + KEY_TASKID + " INTEGER,"
+            + KEY_OPTIME + " INTEGER"
+            + ")";
+
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -78,6 +94,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // creating required tables
         db.execSQL(CREATE_TABLE_TASK);
         db.execSQL(CREATE_TABLE_SUBTASK);
+        db.execSQL(CREATE_TABLE_OPRECORD);
     }
 
     @Override
@@ -85,6 +102,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // on upgrade drop older tables
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_TASK);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_SUBTASK);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_OPRECORD);
 
         // create new tables
         onCreate(db);
@@ -343,6 +361,188 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_SUBTASK, KEY_ID + " = ?",
                 new String[]{String.valueOf(subtask_id)});
+    }
+
+
+    /*
+     * Creating a oprecord
+     */
+    public long createOpRecord(int type, long taskID, long opTime) {
+
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(KEY_TYPE, type);
+        values.put(KEY_TASKID, taskID);
+        values.put(KEY_OPTIME, opTime);
+
+        // insert row
+        long oprecord_id = db.insert(TABLE_OPRECORD, null, values);
+
+        return oprecord_id;
+    }
+
+
+    /*
+     * 获取总的数据记录数量
+     * 返回值1：专注次数
+     * 返回值2：专注小时
+     * 返回值3：完成任务数
+     */
+    public List<Float> getAllRecordNum() {
+        List<Float> allRecordNum = new ArrayList<Float>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        // 获取完成任务数
+        String selectQuery0 = "SELECT COUNT(*) FROM " + TABLE_OPRECORD
+                + " WHERE " + KEY_TYPE + "=0";
+        //Log.e(LOG, selectQuery0);
+        Cursor cursor0 = db.rawQuery(selectQuery0, null);
+        cursor0.moveToFirst();
+        long doneTaskNum = cursor0.getLong(0);
+        cursor0.close();
+
+        // 获取专注次数
+        String selectQuery1 = "SELECT COUNT(*) FROM " + TABLE_OPRECORD
+                + " WHERE " + KEY_TYPE + "=1";
+        //Log.e(LOG, selectQuery1);
+        Cursor cursor1 = db.rawQuery(selectQuery1, null);
+        cursor1.moveToFirst();
+        long pomodoroNum = cursor1.getLong(0);
+        cursor1.close();
+
+        allRecordNum.add((float) pomodoroNum);
+        float hour =  (float)(Math.round(((float) pomodoroNum*25/60)*10))/10;
+        allRecordNum.add(hour);
+        allRecordNum.add((float) doneTaskNum);
+
+        return allRecordNum;
+    }
+
+
+    /*
+     * 获取今日数据记录数量
+     * 返回值1：专注次数
+     * 返回值2：专注小时
+     * 返回值3：完成任务数
+     */
+    public List<Float> getTodayRecordNum() {
+        List<Float> todayRecordNum = new ArrayList<Float>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        // 计算今日的时间范围
+        long curTime = new Date().getTime();
+        long todayStartTime = curTime - (curTime % MSADAY);
+
+        // 获取今日完成任务数
+        String selectQuery0 = "SELECT COUNT(*) FROM " + TABLE_OPRECORD
+                + " WHERE " + KEY_TYPE + "=0 AND " + KEY_OPTIME + ">=" + todayStartTime
+                + " AND " + KEY_OPTIME + "<=" + curTime;
+        //Log.e(LOG, selectQuery0);
+        Cursor cursor0 = db.rawQuery(selectQuery0, null);
+        cursor0.moveToFirst();
+        long doneTaskNum = cursor0.getLong(0);
+        cursor0.close();
+
+        // 获取专注次数
+        String selectQuery1 = "SELECT COUNT(*) FROM " + TABLE_OPRECORD
+                + " WHERE " + KEY_TYPE + "=1 AND " + KEY_OPTIME + ">=" + todayStartTime
+                + " AND " + KEY_OPTIME + "<=" + curTime;
+        //Log.e(LOG, selectQuery1);
+        Cursor cursor1 = db.rawQuery(selectQuery1, null);
+        cursor1.moveToFirst();
+        long pomodoroNum = cursor1.getLong(0);
+        cursor1.close();
+
+        todayRecordNum.add((float) pomodoroNum);
+        float hour =  (float)(Math.round(((float) pomodoroNum*25/60)*10))/10;
+        todayRecordNum.add(hour);
+        todayRecordNum.add((float) doneTaskNum);
+
+        return todayRecordNum;
+    }
+
+
+    /*
+     * 获取过去7天的专注时长、完成任务数据
+     */
+    public ArrayList<HashMap<String, Object>> getLast7DayRecordNum() {
+        ArrayList<HashMap<String, Object>> data = new ArrayList<HashMap<String, Object>>();
+
+        // 计算7天的日期
+        long curTime = new Date().getTime();
+        long todayStartTime = curTime - (curTime % MSADAY);
+        ArrayList<Long> dayStartTimes = new ArrayList<>();
+        ArrayList<String> dateStr = new ArrayList<>();
+        for (int i = 0; i < 7; ++i) {
+            long temp = todayStartTime-(6-i)*MSADAY;
+            dayStartTimes.add(temp);
+            dateStr.add(getFormatedDateTime(temp));
+        }
+
+        // 获取过去7天的专注时长
+        ArrayList<Long> pomodoroNums = new ArrayList<>();
+        ArrayList<Float> pomodoroHours = new ArrayList<>();
+        for (int i = 0; i < 7; ++i) {
+            String selectQuery;
+            if (i == 6) {
+                selectQuery = "SELECT COUNT(*) FROM " + TABLE_OPRECORD
+                        + " WHERE " + KEY_TYPE + "=1 AND " + KEY_OPTIME + ">=" + dayStartTimes.get(i);
+            } else {
+                selectQuery = "SELECT COUNT(*) FROM " + TABLE_OPRECORD
+                        + " WHERE " + KEY_TYPE + "=1 AND " + KEY_OPTIME + ">=" + dayStartTimes.get(i)
+                        + " AND " + KEY_OPTIME + "<" + dayStartTimes.get(i+1);
+            }
+            SQLiteDatabase db = this.getReadableDatabase();
+            Cursor cursor = db.rawQuery(selectQuery, null);
+            cursor.moveToFirst();
+            long pomodoroNum = cursor.getLong(0);
+            cursor.close();
+
+            pomodoroNums.add(pomodoroNum);
+
+            float hour =  (float)(Math.round(((float) pomodoroNum*25/60)*10))/10;
+            pomodoroHours.add(hour);
+        }
+
+        // 获取过去7天的完成任务数
+        ArrayList<Float> doneTaskNums = new ArrayList<>();
+        for (int i = 0; i < 7; ++i) {
+            String selectQuery;
+            if (i == 6) {
+                selectQuery = "SELECT COUNT(*) FROM " + TABLE_OPRECORD
+                        + " WHERE " + KEY_TYPE + "=0 AND " + KEY_OPTIME + ">=" + dayStartTimes.get(i);
+            } else {
+                selectQuery = "SELECT COUNT(*) FROM " + TABLE_OPRECORD
+                        + " WHERE " + KEY_TYPE + "=0 AND " + KEY_OPTIME + ">=" + dayStartTimes.get(i)
+                        + " AND " + KEY_OPTIME + "<" + dayStartTimes.get(i+1);
+            }
+            SQLiteDatabase db = this.getReadableDatabase();
+            Cursor cursor = db.rawQuery(selectQuery, null);
+            cursor.moveToFirst();
+            float doneTaskNum = cursor.getLong(0);
+            cursor.close();
+
+            doneTaskNums.add(doneTaskNum);
+        }
+
+        // 往data中赋值
+        for (int i = 0; i < 7; ++i) {
+            HashMap<String, Object> item = new HashMap<String, Object>();
+            item.put("date", dateStr.get(i));
+            item.put("pomodoroHour", pomodoroHours.get(i));
+            item.put("doneTaskNum", doneTaskNums.get(i));
+            data.add(item);
+        }
+
+        return data;
+    }
+
+
+    public static String getFormatedDateTime(long dateTime) {
+        Date date = new Date(dateTime);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd");
+        return sdf.format(date);
     }
 
 

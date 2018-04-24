@@ -9,7 +9,9 @@ import android.view.View;
 import android.widget.GridView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.yunzhao.focus.helper.DatabaseHelper;
 import com.example.yunzhao.focus.util.StatusBarUtil;
 
 import java.util.ArrayList;
@@ -41,12 +43,15 @@ public class StatisticsActivity extends AppCompatActivity {
     // 图表
     private LineChartView pomodoroChartView;
     private LineChartView taskChartView;
-    String[] date = {"04-17", "04-18", "04-19", "04-20", "04-21", "04-22", "04-23"};  // X轴的标注
-    float[] pomodoroNum = {(float)0.41, 0, (float) 1.25, (float) 1.25, (float) 2.5, (float) 1.67, 0};  // 图表1的数据点
-    float[] taskNum = {4, 3, 2, 5, 2, 3, 7};  // 图表2的数据点
+    private ArrayList<String> dates = new ArrayList<>();  // X轴的标注
+    private ArrayList<Float> pomodoroNums = new ArrayList<>();  // 图表1的数据点
+    private ArrayList<Float> taskNums = new ArrayList<>();  // 图表2的数据点
     private List<PointValue> mPointValues1 = new ArrayList<PointValue>();  // 图表1
     private List<PointValue> mPointValues2 = new ArrayList<PointValue>();  // 图表2
     private List<AxisValue> mAxisXValues = new ArrayList<AxisValue>();
+
+    // 数据存储
+    private DatabaseHelper db;
 
 
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +61,11 @@ public class StatisticsActivity extends AppCompatActivity {
         setToolBar();  // 设置toolbar
         StatusBarUtil.setStatusBarColor(getWindow(), this);  // 设置状态栏颜色
 
-        // 设置网格
+        db = new DatabaseHelper(this);
+
+        /*
+         * 设置网格
+         */
         getData();
         gridView = findViewById(R.id.gridview);
         SimpleAdapter adapter = new SimpleAdapter(this, items, R.layout.item_statistics,
@@ -64,15 +73,18 @@ public class StatisticsActivity extends AppCompatActivity {
         gridView.setAdapter(adapter);
 
 
-        // 设置折线图
-        getAxisXLables();  //获取x轴的标注
+        /*
+         * 设置折线图
+         */
+        getLast7DayData();  // 读取数据
+        getAxisXLables();  // 获取x轴的标注
         // 设置第一个折线图
         pomodoroChartView = findViewById(R.id.pomodoroChartView);
-        getAxisPoints1();  //获取坐标点
-        initLineChart1();  //初始化
+        getAxisPoints1();  // 获取坐标点
+        initLineChart1();  // 初始化
         // 设置第二个折线图
         taskChartView = findViewById(R.id.taskChartView);
-        getAxisPoints2();  //获取坐标点
+        getAxisPoints2();  // 获取坐标点
         initLineChart2();
     }
 
@@ -80,8 +92,8 @@ public class StatisticsActivity extends AppCompatActivity {
      * 设置X轴的显示
      */
     private void getAxisXLables() {
-        for (int i = 0; i < date.length; i++) {
-            mAxisXValues.add(new AxisValue(i).setLabel(date[i]));
+        for (int i = 0; i < dates.size(); i++) {
+            mAxisXValues.add(new AxisValue(i).setLabel(dates.get(i)));
         }
     }
 
@@ -89,17 +101,17 @@ public class StatisticsActivity extends AppCompatActivity {
      * 图表1的每个点的显示
      */
     private void getAxisPoints1() {
-        for (int i = 0; i < pomodoroNum.length; i++) {
-            mPointValues1.add(new PointValue(i, pomodoroNum[i]));
+        for (int i = 0; i < pomodoroNums.size(); i++) {
+            mPointValues1.add(new PointValue(i, pomodoroNums.get(i)));
         }
     }
 
     /**
-     * 图表1的每个点的显示
+     * 图表2的每个点的显示
      */
     private void getAxisPoints2() {
-        for (int i = 0; i < taskNum.length; i++) {
-            mPointValues2.add(new PointValue(i, taskNum[i]));
+        for (int i = 0; i < taskNums.size(); i++) {
+            mPointValues2.add(new PointValue(i, taskNums.get(i)));
         }
     }
 
@@ -226,13 +238,51 @@ public class StatisticsActivity extends AppCompatActivity {
 
     private void getData() {
         items = new ArrayList<HashMap<String, Object>>();
-        for (int i = 0; i < 6; ++i) {
+
+        List<Float> allRecordNum = db.getAllRecordNum();
+        String[] itemNames0 = new String[]{"总专注次数", "总专注时长（h）", "总完成任务"};
+
+        for (int i = 0; i < 3; ++i) {
             HashMap<String, Object> item = new HashMap<String, Object>();
-            item.put("num", 10);
-            item.put("itemname", "累积完成任务");
+            if (i == 1) {
+                item.put("num", allRecordNum.get(i));
+            } else {
+                item.put("num", allRecordNum.get(i).intValue());
+            }
+            item.put("itemname", itemNames0[i]);
+            items.add(item);
+        }
+
+        List<Float> todayRecordNum = db.getTodayRecordNum();
+        String[] itemNames1 = new String[]{"今日专注次数", "今日专注时长（h）", "今日完成任务"};
+
+        for (int i = 0; i < 3; ++i) {
+            HashMap<String, Object> item = new HashMap<String, Object>();
+            if (i == 1) {
+                item.put("num", todayRecordNum.get(i));
+                //Toast.makeText(this, ""+todayRecordNum.get(i), Toast.LENGTH_SHORT).show();
+            } else {
+                item.put("num", todayRecordNum.get(i).intValue());
+            }
+            item.put("itemname", itemNames1[i]);
             items.add(item);
         }
     }
 
+    private void getLast7DayData() {
+        ArrayList<HashMap<String, Object>> data = db.getLast7DayRecordNum();
 
+        for (int i = 0; i < 7; ++i) {
+            HashMap<String, Object> item = data.get(i);
+            dates.add((String) item.get("date"));
+            pomodoroNums.add((Float) item.get("pomodoroHour"));
+            taskNums.add((Float) item.get("doneTaskNum"));
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        db.close();
+        super.onDestroy();
+    }
 }

@@ -27,6 +27,8 @@ public class PomodoroActivity extends AppCompatActivity {
     private Button btn_timekeeping;
     private TextView taskname;
 
+    private long taskID = -1;
+
     private MsgReceiver msgReceiver;
     private Intent mIntent = null;
 
@@ -53,6 +55,9 @@ public class PomodoroActivity extends AppCompatActivity {
         taskname = findViewById(R.id.taskname);
         taskname.setText(getIntent().getStringExtra("taskname"));
 
+        // 初始化任务ID
+        taskID = getIntent().getLongExtra("taskid", 0);
+
         // 初始化背景音效
         soundPool = new SoundPool.Builder().build();
         soundID = soundPool.load(this, R.raw.forest, 1);
@@ -67,6 +72,7 @@ public class PomodoroActivity extends AppCompatActivity {
                     // 开启service
                     mIntent = new Intent(PomodoroActivity.this, ClockService.class);
                     mIntent.putExtra("taskname", taskname.getText().toString());
+                    mIntent.putExtra("taskid", taskID);
                     startService(mIntent);
 
                     // 更新UI

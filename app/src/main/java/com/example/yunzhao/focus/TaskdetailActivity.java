@@ -196,6 +196,7 @@ public class TaskdetailActivity extends AppCompatActivity {
         if (id == R.id.action_pomodoro) {
             Intent intent = new Intent(TaskdetailActivity.this, PomodoroActivity.class);
             intent.putExtra("taskname", et_taskname.getText().toString());
+            intent.putExtra("taskid", taskID);
             startActivity(intent);
         } else if (id == R.id.action_delete) {
             db.deleteTask(taskID);  // 从数据库中删除这条任务
@@ -225,8 +226,12 @@ public class TaskdetailActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        if (!isDelete)
+        if (!isDelete) {
             updateTaskData();
+            if (checkbox.isChecked()) {
+                db.createOpRecord(0, taskID, lastmovetime);
+            }
+        }
 
         super.onPause();
     }

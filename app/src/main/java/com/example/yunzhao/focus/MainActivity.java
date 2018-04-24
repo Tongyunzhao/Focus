@@ -226,7 +226,6 @@ public class MainActivity extends AppCompatActivity
         SpeechUtility.createUtility(this, SpeechConstant.APPID + "=5aac8016");
         initYuYin();
 
-
     }
 
     private void writeSampleTaskToDB() {
@@ -245,7 +244,6 @@ public class MainActivity extends AppCompatActivity
         db.createTask(new TaskItem(true, "重做任务？点左侧小黑框移回「收件箱」", false, new Date().getTime()));
         db.createTask(new TaskItem(true, "这是一条已经完成的任务", false, new Date().getTime()));
     }
-
 
     private void initData() {
         todayTaskItems = new ArrayList<>();
@@ -674,6 +672,9 @@ public class MainActivity extends AppCompatActivity
             // 更新删除线的UI
             refreshListView();
 
+            // 将操作存入OpRecord表
+            db.createOpRecord(0, todayTaskItems.get(i).getID(), new Date().getTime());
+
             // 延迟0.5秒进行删除操作，并更新UI
             operation_position = i;
             new Thread(new Runnable() {
@@ -702,6 +703,9 @@ public class MainActivity extends AppCompatActivity
 
             // 更新删除线的UI
             refreshListView();
+
+            // 将操作存入OpRecord表
+            db.createOpRecord(0, inboxTaskItems.get(i).getID(), new Date().getTime());
 
             // 延迟0.5秒进行删除操作，并更新UI
             operation_position = i;
@@ -761,6 +765,7 @@ public class MainActivity extends AppCompatActivity
                                 Thread.sleep(150);
                                 Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
                                 intent.putExtra("taskname", todayTaskItems.get(position).getTaskName());
+                                intent.putExtra("taskid", todayTaskItems.get(position).getID());
                                 startActivity(intent);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
@@ -799,6 +804,7 @@ public class MainActivity extends AppCompatActivity
                                 Thread.sleep(150);
                                 Intent intent = new Intent(MainActivity.this, PomodoroActivity.class);
                                 intent.putExtra("taskname", inboxTaskItems.get(position).getTaskName());
+                                intent.putExtra("taskid", inboxTaskItems.get(position).getID());
                                 startActivity(intent);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
