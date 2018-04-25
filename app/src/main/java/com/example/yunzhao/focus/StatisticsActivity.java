@@ -125,7 +125,7 @@ public class StatisticsActivity extends AppCompatActivity {
         line.setHasLines(true);  //是否用线显示。如果为false 则没有曲线只有点显示
         line.setHasPoints(true);  //是否显示圆点 如果为false 则没有原点只有点显示（每个数据点都是个大的圆点）
 
-        LineChartValueFormatter chartValueFormatter = new SimpleLineChartValueFormatter(2);
+        LineChartValueFormatter chartValueFormatter = new SimpleLineChartValueFormatter(1);
         line.setFormatter(chartValueFormatter);//显示小数点
 
         List<Line> lines = new ArrayList<Line>();
