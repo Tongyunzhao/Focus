@@ -1,5 +1,6 @@
 package com.example.yunzhao.focus;
 
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -12,6 +13,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -38,9 +40,9 @@ public class PomodoroActivity extends AppCompatActivity {
 
     // 背景音效
     private SoundPool soundPool;  // 声明一个SoundPool
-    private int soundID;  // 创建某个声音对应的音频ID
+    private int soundID0;  // "静音"音频ID
+    private int soundID1;  // "树林鸟鸣"音频ID
     private int playID = 0;
-    private boolean isSound = false;
     private boolean willSound = false;
 
 
@@ -60,7 +62,8 @@ public class PomodoroActivity extends AppCompatActivity {
 
         // 初始化背景音效
         soundPool = new SoundPool.Builder().build();
-        soundID = soundPool.load(this, R.raw.forest, 1);
+        soundID0 = soundPool.load(this, R.raw.silence, 1);
+        soundID1 = soundPool.load(this, R.raw.forest, 1);
 
         progressBar = findViewById(R.id.progress);
         btn_timekeeping = findViewById(R.id.btn_timekeeping);
@@ -82,7 +85,9 @@ public class PomodoroActivity extends AppCompatActivity {
 
                     // 播放白噪音
                     if (willSound) {
-                        playID = soundPool.play(soundID, 0.5f, 0.5f, 0, -1, 1);
+                        playID = soundPool.play(soundID1, 0.5f, 0.5f, 0, -1, 1);
+                    } else {
+                        playID = soundPool.play(soundID0, 0.5f, 0.5f, 0, -1, 1);
                     }
 
                 } else {
@@ -107,16 +112,19 @@ public class PomodoroActivity extends AppCompatActivity {
         });
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void finishPomodoro() {
+        // 更新UI
         progress = 0;
         progressBar.setProgress(progress);
         btn_timekeeping.setText("开始专注");
         btn_timekeeping.setBackground(getDrawable(R.drawable.btn1_selector));
         btn_timekeeping.setTextColor(getResources().getColor(R.color.black_overlay));
 
+        // 停止白噪音
         soundPool.stop(playID);
-        isSound = false;
 
+        // 停止Service
         stopService(mIntent);
     }
 
@@ -183,11 +191,13 @@ public class PomodoroActivity extends AppCompatActivity {
 
             if (btn_timekeeping.getText().toString().equals("放弃")) {
                 if (willSound) {
-                    playID = soundPool.play(soundID, 0.5f, 0.5f, 0, -1, 1);
+                    // 停止“静音”背景音播放，开始“树林鸟鸣”背景音播放
+                    soundPool.stop(playID);
+                    playID = soundPool.play(soundID1, 0.5f, 0.5f, 0, -1, 1);
                 } else {
                     soundPool.stop(playID);
+                    playID = soundPool.play(soundID0, 0.5f, 0.5f, 0, -1, 1);
                 }
-                isSound = willSound;
             }
 
             return true;
@@ -226,7 +236,6 @@ public class PomodoroActivity extends AppCompatActivity {
 
         // 停止白噪音
         soundPool.stop(playID);
-        isSound = false;
     }
 
     /**
