@@ -15,11 +15,11 @@
     <!--允许程序改变网络连接状态 -->
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
     <!--读取手机信息权限 -->
-    <!--<uses-permission android:name="android.permission.READ_PHONE_STATE"/>-->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <!--读取联系人权限，上传联系人需要用到此权限 -->
     <!--<uses-permission android:name="android.permission.READ_CONTACTS"/>-->
     <!--外存储写权限，构建语法需要用到此权限 -->
-    <!--<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>-->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <!--外存储读权限，构建语法需要用到此权限 -->
     <!--<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>-->
     <!--配置权限，用来记录应用配置信息 -->
@@ -30,8 +30,8 @@
 
     <!--震动权限，用在倒计时结束的提示-->
     <uses-permission android:name="android.permission.VIBRATE" />
-
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.GET_TASKS"  />
 
 
     <application
@@ -41,6 +41,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <!-- MID3.5(mid-sdk-3.5.jar) 以上版本请务必增加此配置-->
+        <provider
+            android:name="com.tencent.mid.api.MidProvider"
+            android:authorities="com.example.yunzhao.focus.TENCENT.MID.V3"
+            android:exported="true" >
+        </provider>
+        <meta-data android:name="TA_APPKEY" android:value="AU6DS42ISU6F"/>
+        <!-- 请将value改为app发布对应的渠道，不同的发布渠道使用不同的名字 < -->
+        <meta-data android:name="InstallChannel" android:value="HuaWei"/>
+        <!-- 注意：若填写的渠道为纯数字字符串类型，请不要超过int表示的范围！ < -->
+
 
         <meta-data android:name="focus" android:value="1" />
 

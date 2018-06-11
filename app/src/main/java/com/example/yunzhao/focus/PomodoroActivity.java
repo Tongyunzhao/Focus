@@ -22,6 +22,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.yunzhao.focus.widget.CustomCircleProgressBar;
+import com.tencent.stat.StatService;
 
 public class PomodoroActivity extends AppCompatActivity {
     // UI
@@ -90,6 +91,9 @@ public class PomodoroActivity extends AppCompatActivity {
                         playID = soundPool.play(soundID0, 0.5f, 0.5f, 0, -1, 1);
                     }
 
+                    // 开始专注
+                    StatService.trackCustomKVEvent(PomodoroActivity.this, "StartFocus", null);
+
                 } else {
                     showDialog();
                 }
@@ -140,6 +144,9 @@ public class PomodoroActivity extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         finishPomodoro();
+
+                        // 取消专注事件
+                        StatService.trackCustomKVEvent(PomodoroActivity.this, "CancelFocus", null);
                     }
                 }).show();
     }
@@ -156,6 +163,10 @@ public class PomodoroActivity extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         finishPomodoro();
+
+                        // 取消专注事件
+                        StatService.trackCustomKVEvent(PomodoroActivity.this, "CancelFocus", null);
+
                         PomodoroActivity.this.finish();
                     }
                 }).show();
@@ -216,6 +227,13 @@ public class PomodoroActivity extends AppCompatActivity {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction("com.example.yunzhao.focus.RECEIVER");
         registerReceiver(msgReceiver, intentFilter);
+
+        // 页面开始
+        StatService.onResume(this);
+
+        // 进入专注模式页事件, 统计用户进入专注模式页的次数
+        StatService.trackCustomKVEvent(this, "TimerPage", null);
+
     }
 
     @Override
@@ -224,6 +242,9 @@ public class PomodoroActivity extends AppCompatActivity {
 
         //注销广播
         unregisterReceiver(msgReceiver);
+
+        // 页面结束
+        StatService.onPause(this);
     }
 
     @Override

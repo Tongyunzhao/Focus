@@ -29,6 +29,7 @@ import android.widget.TextView;
 import com.example.yunzhao.focus.helper.DatabaseHelper;
 import com.example.yunzhao.focus.util.StatusBarUtil;
 import com.example.yunzhao.focus.widget.MyListView2;
+import com.tencent.stat.StatService;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -90,6 +91,9 @@ public class TaskdetailActivity extends AppCompatActivity {
                     subtaskItem.setID(db.createSubtask(subtaskItem));  // 赋值ID并存入数据库
                     subtaskItems.add(subtaskItem);
                     adapter.notifyDataSetChanged();
+
+                    // 添加子任务事件
+                    StatService.trackCustomKVEvent(TaskdetailActivity.this, "AddSubtask", null);
                 }
                 return false;
             }
@@ -103,6 +107,8 @@ public class TaskdetailActivity extends AppCompatActivity {
                     et_taskname.setInputType(InputType.TYPE_NULL);
                     soundPool.play(soundID, 0.5f, 0.5f, 0, 0, 1);
                     istodaytask.setVisibility(View.INVISIBLE);
+                    // 完成任务事件
+                    StatService.trackCustomKVEvent(TaskdetailActivity.this, "FinishTask", null);
                 } else {
                     istodaytask.setVisibility(View.VISIBLE);
                     et_taskname.setInputType(InputType.TYPE_CLASS_TEXT);
@@ -114,6 +120,14 @@ public class TaskdetailActivity extends AppCompatActivity {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 lastmovetime = new Date().getTime();
+
+                if (b) {
+                    // 置顶事件
+                    StatService.trackCustomKVEvent(TaskdetailActivity.this, "StickTask", null);
+                } else {
+                    // 取消置顶事件
+                    StatService.trackCustomKVEvent(TaskdetailActivity.this, "UnstickTask", null);
+                }
             }
         });
     }
@@ -201,6 +215,10 @@ public class TaskdetailActivity extends AppCompatActivity {
         } else if (id == R.id.action_delete) {
             db.deleteTask(taskID);  // 从数据库中删除这条任务
             isDelete = true;
+
+            // 删除事件
+            StatService.trackCustomKVEvent(TaskdetailActivity.this, "DeleteTask", null);
+
             finish();
         }
 
@@ -214,9 +232,13 @@ public class TaskdetailActivity extends AppCompatActivity {
             subtaskItems.get(i).setDone(!curCheckedStatus);
             db.updateSubtask(subtaskItems.get(i));  // 存入数据库
 
-            // 播放音效
-            if (subtaskItems.get(i).isDone())
+            if (subtaskItems.get(i).isDone()) {
+                // 播放音效
                 soundPool.play(soundID, 0.5f, 0.5f, 0, 0, 1);
+
+                // 完成子任务事件
+                StatService.trackCustomKVEvent(TaskdetailActivity.this, "FinishSubtask", null);
+            }
 
             // 更新删除线的UI
             adapter.notifyDataSetChanged();
@@ -233,12 +255,29 @@ public class TaskdetailActivity extends AppCompatActivity {
             }
         }
 
+        // 编辑任务描述事件
+        if (!description.equals(getIntent().getStringExtra("description"))) {
+            StatService.trackCustomKVEvent(this, "EditDescription", null);
+        }
+
         super.onPause();
+
+        // 页面结束
+        StatService.onPause(this);
     }
 
     @Override
     protected void onDestroy() {
         db.closeDB();
         super.onDestroy();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 页面开始
+        StatService.onResume(this);
+        // 进入任务详情页事件, 统计用户进入任务详情页的次数
+        StatService.trackCustomKVEvent(this, "TaskDetailPage", null);
     }
 }

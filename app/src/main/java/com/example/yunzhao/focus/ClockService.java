@@ -21,6 +21,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.yunzhao.focus.helper.DatabaseHelper;
+import com.tencent.stat.StatService;
 
 import java.util.Date;
 import java.util.Timer;
@@ -97,6 +98,9 @@ public class ClockService extends Service {
                         vibrator.vibrate(new long[]{0, 1200, 300, 1200, 300, 1200}, -1);
                         // 将操作写入OpRecord表
                         db.createOpRecord(1, taskID, new Date().getTime());
+
+                        // 完成专注
+                        StatService.trackCustomKVEvent(getApplicationContext(), "FinishFocus", null);
                     }
 
                     //发送广播

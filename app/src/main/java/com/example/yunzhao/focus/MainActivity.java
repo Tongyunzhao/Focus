@@ -78,6 +78,8 @@ import com.iflytek.cloud.SpeechUtility;
 import com.iflytek.cloud.ui.RecognizerDialog;
 import com.iflytek.cloud.ui.RecognizerDialogListener;
 import com.iflytek.sunflower.FlowerCollector;
+import com.tencent.stat.MtaSDkException;
+import com.tencent.stat.StatService;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -186,6 +188,20 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        String appkey = "AU6DS42ISU6F";
+        // 初始化并启动MTA
+        try {
+            // 第三个参数必须为：com.tencent.stat.common.StatConstants.VERSION
+            StatService.startStatService(this, appkey,
+                    com.tencent.stat.common.StatConstants.VERSION);
+            Log.d("MTA", "MTA初始化成功");
+        } catch (MtaSDkException e) {
+            // MTA初始化失败
+            Log.d("MTA", "MTA初始化失败" + e);
+        }
+
+
 
         /**
          * 配置页面整体UI
@@ -502,6 +518,12 @@ public class MainActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
 
+        // 页面开始
+        StatService.onResume(this);
+
+        // 进入首页事件,统计用户进入首页的次数
+        StatService.trackCustomKVEvent(this, "HomePage", null);
+
         //获取 SensorManager 负责管理传感器
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         if (mSensorManager != null) {
@@ -522,6 +544,9 @@ public class MainActivity extends AppCompatActivity
             mSensorManager.unregisterListener(this);
         }
         super.onPause();
+
+        // 页面结束
+        StatService.onPause(this);
     }
 
     @Override
@@ -575,6 +600,9 @@ public class MainActivity extends AppCompatActivity
 
                     refreshListView();
                     dialog.dismiss();
+
+                    // 文字添加任务事件
+                    StatService.trackCustomKVEvent(MainActivity.this, "TypeAddTask", null);
                 }
             }
         });
@@ -638,6 +666,9 @@ public class MainActivity extends AppCompatActivity
             inboxTaskItems.add(0, taskItem);
             refreshListView();
             Snackbar.make(scrollView, "已将该任务移动至「收件箱」", Snackbar.LENGTH_LONG).show();
+
+            // 取消置顶事件
+            StatService.trackCustomKVEvent(MainActivity.this, "UnstickTask", null);
         }
     };
 
@@ -656,6 +687,9 @@ public class MainActivity extends AppCompatActivity
             todayTaskItems.add(0, taskItem);
             refreshListView();
             Snackbar.make(scrollView, "已将该任务移动至「今日待办」", Snackbar.LENGTH_LONG).show();
+
+            // 置顶事件
+            StatService.trackCustomKVEvent(MainActivity.this, "StickTask", null);
         }
     };
 
@@ -689,6 +723,9 @@ public class MainActivity extends AppCompatActivity
                     handler.sendMessage(msg);
                 }
             }).start();
+
+            // 完成任务事件
+            StatService.trackCustomKVEvent(MainActivity.this, "FinishTask", null);
         }
     };
 
@@ -721,6 +758,9 @@ public class MainActivity extends AppCompatActivity
                     handler.sendMessage(msg);
                 }
             }).start();
+
+            // 完成任务事件
+            StatService.trackCustomKVEvent(MainActivity.this, "FinishTask", null);
         }
     };
 
@@ -747,6 +787,9 @@ public class MainActivity extends AppCompatActivity
                     handler.sendMessage(msg);
                 }
             }).start();
+
+            // 恢复任务事件
+            StatService.trackCustomKVEvent(MainActivity.this, "UndoTask", null);
         }
     };
 
@@ -783,6 +826,10 @@ public class MainActivity extends AppCompatActivity
                     todayTaskItems.remove(position);  // 从内存中删除
                     refreshListView();
                     //Toast.makeText(MainActivity.this, "删除操作", Toast.LENGTH_SHORT).show();
+
+                    // 删除事件
+                    StatService.trackCustomKVEvent(MainActivity.this, "DeleteTask", null);
+
                     break;
             }
             return false;
@@ -818,6 +865,10 @@ public class MainActivity extends AppCompatActivity
                     inboxTaskItems.remove(position);  // 从内存中删除
                     refreshListView();
                     //Toast.makeText(MainActivity.this, "删除操作", Toast.LENGTH_SHORT).show();
+
+                    // 删除事件
+                    StatService.trackCustomKVEvent(MainActivity.this, "DeleteTask", null);
+
                     break;
             }
             return false;
@@ -1027,6 +1078,9 @@ public class MainActivity extends AppCompatActivity
             inboxTaskItems.add(0, newTask);
             refreshListView();
             Snackbar.make(scrollView, "成功添加一条任务到「收件箱」", Snackbar.LENGTH_LONG).show();
+
+            // 语音添加任务事件
+            StatService.trackCustomKVEvent(MainActivity.this, "SpeakAddTask", null);
         }
 
         isShake = false;

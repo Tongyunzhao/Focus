@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import com.example.yunzhao.focus.helper.DatabaseHelper;
 import com.example.yunzhao.focus.util.StatusBarUtil;
+import com.tencent.stat.StatService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -284,5 +285,21 @@ public class StatisticsActivity extends AppCompatActivity {
     protected void onDestroy() {
         db.close();
         super.onDestroy();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // 页面结束
+        StatService.onPause(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 页面开始
+        StatService.onResume(this);
+        // 进入数据统计页事件, 统计用户进入数据统计页的次数
+        StatService.trackCustomKVEvent(this, "DataPage", null);
     }
 }
